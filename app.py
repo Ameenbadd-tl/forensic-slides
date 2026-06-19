@@ -1,786 +1,1145 @@
-import html
-import random
-import time
-from pathlib import Path
+from flask import Flask, render_template_string
+import json
 
-import streamlit as st
-import streamlit.components.v1 as components
+app = Flask(__name__)
 
+FORENSIC_SLIDES = [
+    {"id": "img35.jpg", "question": "Identify the type of injury and its cause.", "answer": "Extensive bruises/ contusions cause by blunt truma"},
+    {"id": "img36.jpg", "question": "Identify the type of fracture and the instrument used.", "answer": "cut fracture done by a sharp heavy instrument"},
+    {"id": "img37.jpg", "question": "Identify the organ injury and its cause.", "answer": "spleen laceration cause blunt trauma"},
+    {"id": "img45.jpg", "question": "Identify the scalp injury and its cause.", "answer": "skin split of scalp casue exposure to extreme heat"},
+    {"id": "img46.jpg", "question": "What is the finding, and what is the differential diagnosis (D.D)?", "answer": "froth secretion from mouth & nostrils D.D 1 putrefaction foul smell + continent blood 2- drowing"},
+    {"id": "img47.jpg", "question": "Identify the vascular injury and its cause.", "answer": "Aortic transaction between arch of aorta and descending due to steering wheel injury RTA"},
+    {"id": "img50.jpg", "question": "Identify the organ injury and its cause.", "answer": "Sever lacerated wound in liver due to sever blunt truma"},
+    {"id": "img51.jpg", "question": "Identify the type of fracture and its cause.", "answer": "Depressed comminated fracture due to heavy blunt truma Wide surface area & high momentum"},
+    {"id": "img52.jpg", "question": "What is the age estimation (MLI) from this sternum and why?", "answer": "Sternum MLI : Less than 40y b/c xiphoid cartilage and body not united and body and manubrium on 60y"},
+    {"id": "img60.jpg", "question": "Identify the type of skull fracture and specify the inlet/outlet.", "answer": "Gutter fracture due to bullet left inlet & right ex"},
+    {"id": "img61.jpg", "question": "What is the specific mark seen on this fired bullet?", "answer": "Firing bullet there is rifling marks"},
+    {"id": "img62.jpg", "question": "Identify the condition and its cause.", "answer": "Trench foot due to long immersion in cold water"},
+    {"id": "img72.jpg", "question": "Identify the signs, the underlying fracture, and the clinical presentation (C/P).", "answer": "Racon eye & spectacle hem due to fracture of base of skull anterior cranial fossa c/p : rhinorrhea"},
+    {"id": "img73.jpg", "question": "Identify the type of hair and describe its medulla and cortex.", "answer": "Animal hair – thick medulla & thin cortex"},
+    {"id": "img74.jpg", "question": "Identify the organ injury and its cause.", "answer": "Lacerated wound in kidney due to blunt trauma."},
+    {"id": "img82.jpg", "question": "Estimate the age from this skull vault and state the reason.", "answer": "Vault of skull Open anterior fontanelle indicating an age less than 1.5y"},
+    {"id": "img83.jpg", "question": "Identify the sign pointed by the left pointer and its mechanism.", "answer": "Left pointer : contact pallor mech : compression in blod vessles"},
+    {"id": "img84.jpg", "question": "Identify the postmortem change and its mechanism.", "answer": "Postmortem hypostasis (livor mortis mech : cessation of the circulation and relaxation of muscle tone leading gravitation"},
+    {"id": "img89.jpg", "question": "What does the contact pallor indicate in this case?", "answer": "Contact pallor indicating prone position at death."},
+    {"id": "img90.jpg", "question": "Identify the postmortem change and estimate the time since death.", "answer": "Skeletonization (indicated: more 6 months + less 1 year )"},
+    {"id": "img91.jpg", "question": "Identify the type of hemorrhage and its cause.", "answer": "Extradural (epidural) hemorrhage caused by trauma"},
+    {"id": "img96.jpg", "question": "Identify the type of fracture and its cause.", "answer": "Hinge fracture , Cause: fall on the buttocks"},
+    {"id": "img97.jpg", "question": "Identify the attitude, its cause, and the mechanism.", "answer": "Boxer (Pugilistic) attitude. Cause: exposure to extreme heat. Mechanism: coagulation and contraction of muscle proteins"},
+    {"id": "img98.jpg", "question": "Determine the sex of the right and left skulls. Mention 2 features for each.", "answer": "right is Male skull. 2 Features: prominent supraorbital ridges, angular frontonasal junction left is Female skull. 2 Features: less prominent supraorbital ridges, smotth frontonasal junction"},
+    {"id": "img101.jpg", "question": "Identify the postmortem change and its definition.", "answer": "Maceration. aseptic autolytic changes that occur in a fetus that died in utero"},
+    {"id": "img102.jpg", "question": "Identify the skin lesion and mention its causes.", "answer": "Bulla (blister). Causes: putrefaction content gas material burns content albumin protein"},
+    {"id": "img103.jpg", "question": "Identify the type of wound.", "answer": "Cut defense wound"},
+    {"id": "img106.jpg", "question": "Identify the condition and mention when it occurs.", "answer": "Cadaveric spasm. Occurs in situations of extreme nervous tension such as suicide"},
+    {"id": "img107.jpg", "question": "Identify the finding on the heart surface and its cause.", "answer": "Petechial hemorrhages on the heart surface caused by asphyxia"},
+    {"id": "img108.jpg", "question": "Identify the injury and its cause.", "answer": "Whiplash injury. caused by hyperflexion and hyperextension of the neck"},
+    {"id": "img111.jpg", "question": "Identify the condition and the mechanisms of death.", "answer": "suffocation by a plastic bag cause death asphyxia + or reflex carotid sinus cardiac arrest"},
+    {"id": "img112.jpg", "question": "Identify the type of injury and mention its MLI (3 points).", "answer": "Close firearm injury. MLI: 1. Distance of firearm discharge. 2. Print of muzzle. 3. Type of weapon"},
+    {"id": "img113.jpg", "question": "Identify the scalp wound and its cause.", "answer": "Lacerated wound of the scalp due to blunt trauma"},
+    {"id": "img116.jpg", "question": "Identify the type of burn and mention 2 characteristics.", "answer": "Scald burn. ( moist burn) Sharp demarcation edge .2. Reddening of the skin"},
+    {"id": "img117.jpg", "question": "Identify the type of mark/burn on the neck.", "answer": "Rope burns (brush abrasion / ligature mark of hanging)."},
+    {"id": "img118.jpg", "question": "Identify the condition and the cause of death.", "answer": "Impaction of food in the oropharyngeal (Café Coronary). + choking death : asphyxia or cardiac arrest"},
+    {"id": "img119.jpg", "question": "Identify the finding and its possible causes.", "answer": "Petechial hemorrhages on the eyelid and Conjunctival in a case of manual strangulation or sneezing"},
+    {"id": "img122.jpg", "question": "Identify the scalp injury and its cause.", "answer": "Scalp avulsion of left face (flaying injury) due to a rotating wheel."},
+    {"id": "img123.jpg", "question": "1- Identify the type of hanging. 2- Identify the phenomenon pointed by the arrow and its time indication.", "answer": "1- Incomplete hanging 2-arrow pointed to marbling phenonmen indicated time since of death is 48h in summer and 1 week un winter"},
+    {"id": "img124.jpg", "question": "Identify the location of the suspension point.", "answer": "Suspension point of hanging at the occipital region"},
+    {"id": "img127.jpg", "question": "Identify the type of knot/noose.", "answer": "Double running noose (Knot)"},
+    {"id": "img128.jpg", "question": "Identify the brain pathology.", "answer": "Brain absess in cerebral hemospher"},
+    {"id": "img129.jpg", "question": "Compare the right and left sides of the hyoid bone and mention the associated condition.", "answer": "Right side normal hyoid bone Left side : fracture of greater coroner of hyoid bone common in manual strangulation"},
+    {"id": "img132.jpg", "question": "What do the soot particles in the trachea indicate?", "answer": "Soot particles in trachea indicate antemortem burn death"},
+    {"id": "img133.jpg", "question": "Identify the sign, its cause, and the clinical presentation.", "answer": "Battles sign cause fracture of base of skull in middle cranial fossa otorrhea"},
+    {"id": "img134.jpg", "question": "Identify the condition and the cause of death.", "answer": "Gagging cause of death asphyxia"},
+    {"id": "img137.jpg", "question": "Identify the type of powder, its content, and gas production volume.", "answer": "smokeless powder content nitroglycerine or nitrocellulose one volume prodused 900 volumes of gases"},
+    {"id": "img138.jpg", "question": "Identify the type of scars and their cause.", "answer": "Keloid scars from extensive burns"},
+    {"id": "img139.jpg", "question": "Identify the condition, the material used, and the mark's direction.", "answer": "Suicidal hanging with dog lead , the mark rising to suspension point front the neck"},
+    {"id": "img142.jpg", "question": "Identify the type of hemorrhage.", "answer": "large extradural hemorrhage"},
+    {"id": "img143.jpg", "question": "Identify the type of fracture and its cause.", "answer": "Ring fracture cause : falling from height on feet or boxer"},
+    {"id": "img144.jpg", "question": "Identify the findings indicated by the blue and red arrows and their causes.", "answer": "blue arrow Contact pallor due to compression of blood vessels red arrow : hypostasis chery red color due to CO posion or cynaid po or cold"},
+    {"id": "img147.jpg", "question": "Identify the type of bruises and their cause.", "answer": "Typical railway-line' bruises caused by a wooden rod."},
+    {"id": "img148.jpg", "question": "Identify the type of hair and describe its medulla and cortex.", "answer": "Human hair – Absent medulla & thick cortex"},
+]
 
-BASE_DIR = Path(__file__).resolve().parent
-IMAGE_DIR = BASE_DIR / "forensic-slides"
-TIMER_SECONDS = 30
-
-
-SLIDES_DATA = {
-    "img35.jpg": {"q": "Identify the type of injury and its cause.", "a": "Extensive bruises/ contusions cause by blunt truma"},
-    "img36.jpg": {"q": "Identify the type of fracture and the instrument used.", "a": "cut fracture done by a sharp heavy instrument"},
-    "img37.jpg": {"q": "Identify the organ injury and its cause.", "a": "spleen laceration cause blunt trauma"},
-    "img45.jpg": {"q": "Identify the scalp injury and its cause.", "a": "skin split of scalp casue exposure to extreme heat"},
-    "img46.jpg": {"q": "What is the finding, and what is the differential diagnosis (D.D)?", "a": "froth secretion from mouth & nostrils D.D 1 putrefaction foul smell + continent blood 2- drowing"},
-    "img47.jpg": {"q": "Identify the vascular injury and its cause.", "a": "Aortic transaction between arch of aorta and descending due to steering wheel injury RTA"},
-    "img50.jpg": {"q": "Identify the organ injury and its cause.", "a": "Sever lacerated wound in liver due to sever blunt truma"},
-    "img51.jpg": {"q": "Identify the type of fracture and its cause.", "a": "Depressed comminated fracture due to heavy blunt truma Wide surface area & high momentum"},
-    "img52.jpg": {"q": "What is the age estimation (MLI) from this sternum and why?", "a": "Sternum MLI : Less than 40y b/c xiphoid cartilage and body not united and body and manubrium on 60y"},
-    "img60.jpg": {"q": "Identify the type of skull fracture and specify the inlet/outlet.", "a": "Gutter fracture due to bullet left inlet & right ex"},
-    "img61.jpg": {"q": "What is the specific mark seen on this fired bullet?", "a": "Firing bullet there is rifling marks"},
-    "img62.jpg": {"q": "Identify the condition and its cause.", "a": "Trench foot due to long immersion in wet water"},
-    "img72.jpg": {"q": "Identify the signs, the underlying fracture, and the clinical presentation (C/P).", "a": "Racon eye & spectacle hem due to fracture of base of skull anterior cranial fossa c/p : rhinorrhea"},
-    "img73.jpg": {"q": "Identify the type of hair and describe its medulla and cortex.", "a": "Animal hair – thick medulla & thin cortex"},
-    "img74.jpg": {"q": "Identify the organ injury and its cause.", "a": "Lacerated wound in kidney due to blunt trauma."},
-    "img82.jpg": {"q": "Estimate the age from this skull vault and state the reason.", "a": "Vault of skull Open anterior fontanelle indicating an age less than 1.5y"},
-    "img83.jpg": {"q": "Identify the sign pointed by the left pointer and right postmortem change and its mechanism.", "a": "Left pointer : contact pallor mech : compression in blod vessles right Postmortem hypostasis (livor mortis mech : cessation of the circulation and relaxation of muscle tone leading gravitation"},
-    "img84.jpg": {"q": "What does the contact pallor indicate in this case?", "a": "Contact pallor indicating prone position at death."},
-    "img89.jpg": {"q": "Identify the postmortem change and estimate the time since death.", "a": "Skeletonization (indicated: more 6 months + less 1 year )"},
-    "img90.jpg": {"q": "Identify the type of hemorrhage and its cause.", "a": "Extradural (epidural) hemorrhage caused by trauma"},
-    "img91.jpg": {"q": "Identify the type of fracture and its cause.", "a": "Hinge fracture , Cause: fall on the buttocks"},
-    "img96.jpg": {"q": "Identify the attitude, its cause, and the mechanism.", "a": "Boxer (Pugilistic) attitude. Cause: exposure to extreme heat. Mechanism: coagulation and contraction of muscle proteins"},
-    "img97.jpg": {"q": "Determine the sex of the right and left skulls. Mention 2 features for each.", "a": "right is Male skull. 2 Features: prominent supraorbital ridges, angular frontonasal junction left is Female skull. 2 Features: less prominent supraorbital ridges, smotth frontonasal junction"},
-    "img98.jpg": {"q": "Identify the postmortem change and its definition.", "a": "Maceration. aseptic autolytic changes that occur in a fetus that died in utero"},
-    "img101.jpg": {"q": "Identify the skin lesion and mention its causes.", "a": "Bulla (blister). Causes: putrefaction content gas material burns content albumin protein"},
-    "img102.jpg": {"q": "Identify the type of wound.", "a": "Cut defense wound"},
-    "img103.jpg": {"q": "Identify the condition and mention when it occurs.", "a": "Cadaveric spasm. Occurs in situations of extreme nervous tension such as suicide"},
-    "img106.jpg": {"q": "Identify the finding on the heart surface and its cause.", "a": "Petechial hemorrhages on the heart surface caused by asphyxia"},
-    "img107.jpg": {"q": "Identify the injury and its cause.", "a": "Whiplash injury. caused by hyperflexion and hyperextension of the neck"},
-    "img108.jpg": {"q": "Identify the condition and the mechanisms of death.", "a": "suffocation by a plastic bag cause death asphyxia + or reflex carotid sinus cardiac arrest"},
-    "img111.jpg": {"q": "Identify the type of injury and mention its MLI (3 points).", "a": "Close firearm injury. MLI: 1. Distance of firearm discharge. 2. Print of muzzle. 3. Type of weapon"},
-    "img112.jpg": {"q": "Identify the scalp wound and its cause.", "a": "Lacerated wound of the scalp due to blunt trauma"},
-    "img113.jpg": {"q": "Identify the type of burn and mention 2 characteristics.", "a": "Scald burn. ( moist burn) Sharp demarcation edge .2. Reddening of the skin"},
-    "img116.jpg": {"q": "Identify the type of mark/burn on the neck.", "a": "Rope burns (brush abrasion / ligature mark of hanging)."},
-    "img117.jpg": {"q": "Identify the condition and the cause of death.", "a": "Impaction of food in the oropharyngeal (Café Coronary). + choking death : asphyxia or cardiac arrest"},
-    "img118.jpg": {"q": "Identify the finding and its possible causes.", "a": "Petechial hemorrhages on the eyelid and Conjunctival in a case of manual strangulation or sneezing"},
-    "img122.jpg": {"q": "Identify the scalp injury and its cause.", "a": "Scalp avulsion of left face (flaying injury) due to a rotating wheel."},
-    "img123.jpg": {"q": "1- Identify the type of hanging. 2- Identify the phenomenon pointed by the arrow and its time indication.", "a": "1- Incomplete hanging 2-arrow pointed to marbling phenonmen indicated time since of death is 48h in summer and 1 week un winter"},
-    "img124.jpg": {"q": "Identify the location of the suspension point.", "a": "Suspension point of hanging at the occipital region"},
-    "img127.jpg": {"q": "Identify the type of knot/noose.", "a": "Double running noose (Knot)"},
-    "img128.jpg": {"q": "Identify the brain pathology.", "a": "Brain absess in cerebral hemospher"},
-    "img129.jpg": {"q": "Compare the right and left sides of the hyoid bone and mention the associated condition.", "a": "Right side normal hyoid bone Left side : fracture of greater coroner of hyoid bone common in manual strangulation"},
-    "img132.jpg": {"q": "What do the soot particles in the trachea indicate?", "a": "Soot particles in trachea indicate antemortem burn death"},
-    "img133.jpg": {"q": "Identify the sign, its cause, and the clinical presentation.", "a": "Battles sign cause fracture of base of skull in middle cranial fossa otorrhea"},
-    "img134.jpg": {"q": "Identify the condition and the cause of death.", "a": "Gagging cause of death asphyxia"},
-    "img137.jpg": {"q": "Identify the type of powder, its content, and gas production volume.", "a": "smokeless powder content nitroglycerine or nitrocellulose one volume prodused 900 volumes of gases"},
-    "img138.jpg": {"q": "Identify the type of scars and their cause.", "a": "Keloid scars from extensive burns"},
-    "img139.jpg": {"q": "Identify the condition, the material used, and the mark's direction.", "a": "Suicidal hanging with dog lead , the mark rising to suspension point front the neck"},
-    "img142.jpg": {"q": "Identify the type of hemorrhage.", "a": "large extradural hemorrhage"},
-    "img143.jpg": {"q": "Identify the type of fracture and its cause.", "a": "Ring fracture cause : falling from height on feet or boxer"},
-    "img144.jpg": {"q": "Identify the findings indicated by the blue and red arrows and their causes.", "a": "blue arrow Contact pallor due to compression of blood vessels red arrow : hypostasis chery red color due to CO posion or cynaid po or cold"},
-    "img147.jpg": {"q": "Identify the type of bruises and their cause.", "a": "Typical railway-line' bruises caused by a wooden rod."},
-    "img148.jpg": {"q": "Identify the type of hair and describe its medulla and cortex.", "a": "Human hair – Absent medulla & thick cortex"}
-}
-
-FOLDER_NAME = "forensic-slides"
-
-st.set_page_config(
-    page_title="Forensic Slides Quiz",
-    page_icon="🔬",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-)
-
-
-st.markdown(
-    """
-    <style>
-    :root {
-        --bg: #f3f6fb;
-        --panel: rgba(255, 255, 255, 0.78);
-        --panel-strong: rgba(255, 255, 255, 0.94);
-        --border: rgba(15, 23, 42, 0.08);
-        --text: #0f172a;
-        --muted: #64748b;
-        --accent: #0f766e;
-        --accent-dark: #0b5b56;
-        --accent-soft: rgba(15, 118, 110, 0.12);
-        --warning: #d97706;
-        --danger: #dc2626;
-        --shadow: 0 18px 50px rgba(15, 23, 42, 0.10);
+HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forensic Quiz</title>
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --primary:#111827;
+      --primary-2:#374151;
+      --accent:#eef2ff;
+      --success:#166534;
+      --success-bg:#ecfdf3;
+      --danger:#b91c1c;
+      --danger-bg:#fef2f2;
+      --warning:#92400e;
+      --warning-bg:#fff7ed;
+      --shadow:0 12px 32px rgba(17,24,39,.08);
+      --radius:24px;
     }
 
-    .stApp {
-        background:
-            radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 34%),
-            radial-gradient(circle at top right, rgba(59, 130, 246, 0.10), transparent 30%),
-            linear-gradient(180deg, #eef3f9 0%, #f8fafc 45%, #eef2f7 100%);
-        color: var(--text);
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,Segoe UI,Tahoma,Arial,sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(17,24,39,.06), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(99,102,241,.08), transparent 25%),
+        var(--bg);
+      color:var(--text);
     }
 
-    #MainMenu, footer, header {
-        visibility: hidden;
+    .container{
+      max-width:1280px;
+      margin:0 auto;
+      padding:24px;
     }
 
-    .block-container {
-        padding-top: 1.5rem;
-        padding-bottom: 2.5rem;
-        max-width: 1180px;
+    .hero{
+      display:grid;
+      grid-template-columns:1.2fr .8fr;
+      gap:24px;
+      background:rgba(255,255,255,.92);
+      border:1px solid var(--line);
+      border-radius:32px;
+      box-shadow:var(--shadow);
+      padding:32px;
+      overflow:hidden;
+      position:relative;
     }
 
-    .hero-shell,
-    .panel-shell,
-    .question-shell,
-    .answer-shell,
-    .timer-shell {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 24px;
-        box-shadow: var(--shadow);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
+    .hero::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(135deg, rgba(17,24,39,.06), transparent 40%),
+        linear-gradient(315deg, rgba(99,102,241,.08), transparent 45%);
+      pointer-events:none;
     }
 
-    .hero-shell {
-        padding: 1.5rem 1.5rem 1.25rem 1.5rem;
-        margin-bottom: 1rem;
+    .hero > *{position:relative; z-index:1}
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.82);
+      color:var(--muted);
+      border-radius:999px;
+      padding:10px 14px;
+      font-size:14px;
+      width:fit-content;
+      backdrop-filter:blur(10px);
     }
 
-    .hero-kicker {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.45rem;
-        padding: 0.35rem 0.7rem;
-        border-radius: 999px;
-        background: var(--accent-soft);
-        color: var(--accent-dark);
-        font-size: 0.8rem;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-        margin-bottom: 0.9rem;
+    h1{
+      margin:18px 0 12px;
+      font-size:42px;
+      line-height:1.15;
+      letter-spacing:-.03em;
     }
 
-    .hero-title {
-        font-size: clamp(2rem, 3vw, 3.2rem);
-        font-weight: 900;
-        line-height: 1.05;
-        color: var(--text);
-        margin-bottom: 0.45rem;
+    .sub{
+      margin:0;
+      color:var(--muted);
+      font-size:17px;
+      line-height:1.8;
+      max-width:780px;
     }
 
-    .hero-subtitle {
-        color: var(--muted);
-        font-size: 1.02rem;
-        line-height: 1.8;
-        margin-bottom: 0;
+    .features{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:14px;
+      margin-top:24px;
     }
 
-    .mini-stat {
-        display: flex;
-        flex-direction: column;
-        gap: 0.15rem;
-        padding: 1rem 1rem 0.9rem 1rem;
-        border-radius: 18px;
-        background: rgba(15, 23, 42, 0.03);
-        border: 1px solid rgba(15, 23, 42, 0.05);
+    .feature{
+      background:rgba(255,255,255,.82);
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:18px;
+      box-shadow:0 6px 20px rgba(17,24,39,.04);
     }
 
-    .mini-stat .label {
-        color: var(--muted);
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+    .feature .icon{
+      width:42px;height:42px;border-radius:14px;
+      display:flex;align-items:center;justify-content:center;
+      background:#f3f4f6;
+      font-size:18px;
+      margin-bottom:12px;
     }
 
-    .mini-stat .value {
-        color: var(--text);
-        font-size: 1.3rem;
-        font-weight: 800;
+    .feature h3{
+      margin:0 0 6px;
+      font-size:16px;
     }
 
-    .panel-shell {
-        padding: 1.1rem;
-        margin-bottom: 1rem;
+    .feature p{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.7;
     }
 
-    .section-title {
-        color: var(--text);
-        font-size: 1.12rem;
-        font-weight: 800;
-        margin-bottom: 0.3rem;
+    .panel{
+      background:rgba(255,255,255,.9);
+      border:1px solid var(--line);
+      border-radius:26px;
+      padding:22px;
     }
 
-    .section-caption {
-        color: var(--muted);
-        font-size: 0.92rem;
-        line-height: 1.7;
-        margin-bottom: 1rem;
+    .panel h2{
+      margin:0 0 8px;
+      font-size:24px;
     }
 
-    .question-shell,
-    .answer-shell {
-        padding: 1.1rem 1.15rem;
+    .panel .small{
+      color:var(--muted);
+      margin-bottom:22px;
+      line-height:1.7;
+      font-size:14px;
     }
 
-    .question-shell {
-        border-left: 6px solid var(--accent);
-        margin-bottom: 0.9rem;
+    .field{margin-bottom:18px}
+    .label{
+      display:block;
+      margin-bottom:8px;
+      font-size:14px;
+      font-weight:600;
     }
 
-    .answer-shell {
-        border-left: 6px solid #16a34a;
-        background: rgba(240, 253, 244, 0.72);
-        margin-bottom: 0.9rem;
+    input[type="number"], textarea{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px 16px;
+      font-size:16px;
+      outline:none;
+      background:#fff;
+      color:var(--text);
     }
 
-    .question-label,
-    .answer-label {
-        display: block;
-        font-size: 0.8rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--muted);
-        margin-bottom: 0.35rem;
+    input[type="number"]:focus, textarea:focus{
+      border-color:#9ca3af;
+      box-shadow:0 0 0 4px rgba(17,24,39,.06);
     }
 
-    .question-text,
-    .answer-text,
-    .user-text {
-        font-size: 1.1rem;
-        line-height: 1.8;
-        color: var(--text);
-        word-break: break-word;
+    textarea{
+      min-height:160px;
+      resize:vertical;
+      line-height:1.8;
     }
 
-    .answer-text {
-        font-weight: 700;
+    .switch-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      border:1px solid var(--line);
+      border-radius:20px;
+      padding:16px;
+      margin-bottom:18px;
+      background:#fafafa;
     }
 
-    .user-shell {
-        padding: 0.95rem 1.05rem;
-        background: rgba(255, 255, 255, 0.75);
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 18px;
-        margin-bottom: 0.9rem;
+    .meta-grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:12px;
+      margin-bottom:18px;
     }
 
-    .timer-shell {
-        padding: 1rem 1.1rem;
-        margin-bottom: 1rem;
-        background: rgba(15, 23, 42, 0.04);
+    .meta-box{
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:14px;
+      background:#fafafa;
     }
 
-    .timer-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 1rem;
-        margin-bottom: 0.55rem;
+    .meta-box span{
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:6px;
     }
 
-    .timer-heading {
-        font-size: 0.95rem;
-        font-weight: 800;
-        color: var(--text);
+    .meta-box strong{
+      font-size:20px;
     }
 
-    .timer-status {
-        font-size: 0.82rem;
-        color: var(--muted);
-        font-weight: 600;
+    .btn{
+      border:none;
+      border-radius:18px;
+      padding:14px 20px;
+      font-size:15px;
+      font-weight:700;
+      cursor:pointer;
+      transition:.2s ease;
     }
 
-    .timer-display {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
+    .btn:hover{transform:translateY(-1px)}
+    .btn-primary{
+      background:var(--primary);
+      color:#fff;
+      width:100%;
+    }
+    .btn-primary:hover{background:var(--primary-2)}
+    .btn-outline{
+      background:#fff;
+      color:var(--text);
+      border:1px solid var(--line);
     }
 
-    .timer-number {
-        font-size: 2.4rem;
-        font-weight: 900;
-        letter-spacing: -0.05em;
-        line-height: 1;
+    .main-grid{
+      display:none;
+      grid-template-columns:.74fr 1.26fr;
+      gap:24px;
+      margin-top:24px;
     }
 
-    .timer-meta {
-        display: flex;
-        flex-direction: column;
-        gap: 0.2rem;
-        align-items: flex-end;
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:28px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
     }
 
-    .timer-meta .big {
-        font-weight: 800;
-        color: var(--text);
-        font-size: 1rem;
+    .card-header{
+      padding:24px;
+      border-bottom:1px solid var(--line);
+      background:#fafafa;
     }
 
-    .timer-meta .small {
-        color: var(--muted);
-        font-size: 0.86rem;
+    .card-body{
+      padding:24px;
     }
 
-    .timer-bar {
-        width: 100%;
-        height: 10px;
-        border-radius: 999px;
-        background: rgba(15, 23, 42, 0.08);
-        overflow: hidden;
-        margin-top: 0.85rem;
+    .section-title{
+      margin:0 0 8px;
+      font-size:24px;
     }
 
-    .timer-fill {
-        height: 100%;
-        border-radius: 999px;
-        transition: width 0.9s linear, background 0.4s ease;
+    .section-sub{
+      margin:0;
+      color:var(--muted);
+      line-height:1.7;
+      font-size:14px;
     }
 
-    div[data-testid="stImage"] {
-        display: flex;
-        justify-content: center;
-        margin: 0.2rem 0 1rem 0;
+    .timer-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:88px;
+      height:42px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-weight:800;
+      font-size:15px;
     }
 
-    div[data-testid="stImage"] img {
-        width: 100%;
-        max-width: 100%;
-        height: auto;
-        object-fit: contain;
-        border-radius: 18px;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.10);
+    .progress-wrap{
+      margin-top:18px;
     }
 
-    @media (max-width: 640px) {
-        .hero-title {
-            font-size: 1.75rem;
-        }
-
-        .question-text,
-        .answer-text,
-        .user-text {
-            font-size: 1rem;
-            line-height: 1.7;
-        }
-
-        div[data-testid="stImage"] img {
-            max-height: 46vh;
-        }
+    .progress{
+      width:100%;
+      height:9px;
+      border-radius:999px;
+      background:#eceff4;
+      overflow:hidden;
     }
 
-    @media (min-width: 641px) and (max-width: 1024px) {
-        div[data-testid="stImage"] img {
-            max-height: 58vh;
-        }
+    .progress-bar{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg,#111827,#4b5563);
+      transition:.3s ease;
     }
 
-    @media (min-width: 1025px) {
-        div[data-testid="stImage"] img {
-            max-height: 68vh;
-        }
+    .progress-row{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:10px;
+      color:var(--muted);
+      font-size:14px;
     }
 
-    .timer-safe .timer-number { color: var(--accent); }
-    .timer-safe .timer-fill { background: linear-gradient(90deg, #14b8a6, #0f766e); }
-    .timer-warning .timer-number { color: var(--warning); }
-    .timer-warning .timer-fill { background: linear-gradient(90deg, #f59e0b, #d97706); }
-    .timer-danger .timer-number { color: var(--danger); }
-    .timer-danger .timer-fill { background: linear-gradient(90deg, #ef4444, #dc2626); }
-
-    .time-result-safe {
-        color: #0f766e;
-        font-weight: 800;
-        font-size: 1rem;
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:12px;
+      margin-top:16px;
     }
 
-    .time-result-warning {
-        color: #b91c1c;
-        font-weight: 800;
-        font-size: 1rem;
+    .stat{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:20px;
+      padding:16px;
     }
 
-    div.stButton > button {
-        width: 100%;
-        border-radius: 16px;
-        border: 1px solid rgba(15, 23, 42, 0.10);
-        padding: 0.82rem 1rem;
-        font-weight: 800;
-        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    .stat span{
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:8px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
     }
 
-    div.stButton > button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+    .stat strong{
+      font-size:28px;
     }
 
-    div[data-testid="stNumberInput"] input,
-    div[data-testid="stTextArea"] textarea {
-        border-radius: 16px;
-        border: 1px solid rgba(15, 23, 42, 0.10);
-        background: rgba(255, 255, 255, 0.95);
-        color: var(--text);
+    .tip{
+      margin-top:16px;
+      border:1px solid var(--line);
+      background:#fafafa;
+      border-radius:20px;
+      padding:16px;
+      color:var(--muted);
+      line-height:1.8;
+      font-size:14px;
     }
 
-    div[data-testid="stCheckbox"] label {
-        color: var(--text);
-        font-weight: 600;
+    .question-head{
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      align-items:center;
+      flex-wrap:wrap;
     }
 
-    .stProgress > div > div > div {
-        background: linear-gradient(90deg, #14b8a6, #0f766e) !important;
+    .pill{
+      border:1px solid var(--line);
+      padding:10px 14px;
+      border-radius:999px;
+      background:#fff;
+      color:var(--muted);
+      font-size:14px;
     }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
-
-def init_state() -> None:
-    defaults = {
-        "quiz_started": False,
-        "current_q_index": 0,
-        "selected_slides": [],
-        "show_answer": False,
-        "use_timer": False,
-        "q_start_time": 0.0,
-        "time_taken": 0.0,
-        "stored_user_answer": "",
-        "num_questions": 10,
+    .question-box{
+      margin-top:18px;
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:18px;
+      background:#fff;
     }
-    for key, value in defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = value
 
+    .question-box small{
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.12em;
+      font-weight:700;
+      font-size:11px;
+    }
 
-def reset_quiz() -> None:
-    st.session_state.quiz_started = False
-    st.session_state.current_q_index = 0
-    st.session_state.selected_slides = []
-    st.session_state.show_answer = False
-    st.session_state.stored_user_answer = ""
-    st.session_state.time_taken = 0.0
-    st.session_state.q_start_time = 0.0
+    .question-box p{
+      margin:12px 0 0;
+      font-size:20px;
+      line-height:1.8;
+    }
 
+    .image-box{
+      margin-top:22px;
+      border:1px solid var(--line);
+      border-radius:28px;
+      overflow:hidden;
+      background:#f8fafc;
+      min-height:340px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
 
-def start_quiz(num_questions: int, use_timer: bool) -> None:
-    all_slides = list(SLIDES_DATA.keys())
-    st.session_state.selected_slides = random.sample(all_slides, num_questions)
-    st.session_state.quiz_started = True
-    st.session_state.current_q_index = 0
-    st.session_state.show_answer = False
-    st.session_state.stored_user_answer = ""
-    st.session_state.time_taken = 0.0
-    st.session_state.use_timer = use_timer
-    st.session_state.q_start_time = time.time()
+    .image-box img{
+      width:100%;
+      max-height:560px;
+      object-fit:contain;
+      display:block;
+      background:#f9fafb;
+    }
 
+    .image-fallback{
+      text-align:center;
+      padding:40px 24px;
+      color:var(--muted);
+      line-height:1.8;
+    }
 
-def render_timer_widget(start_ts: float, duration: int = TIMER_SECONDS) -> None:
-    start_ms = int(start_ts * 1000)
-    html_block = f"""
-    <style>
-      :root {{
-        color-scheme: light;
-      }}
-      body {{
-        margin: 0;
-        background: transparent;
-        font-family: Inter, "Segoe UI", Tahoma, sans-serif;
-      }}
-      .timer-shell {{
-        box-sizing: border-box;
-        width: 100%;
-        padding: 1rem 1.1rem;
-        border-radius: 22px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        background: rgba(255, 255, 255, 0.92);
-        box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
-      }}
-      .timer-top {{
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 1rem;
-        margin-bottom: 0.55rem;
-      }}
-      .timer-heading {{
-        font-size: 0.95rem;
-        font-weight: 800;
-        color: #0f172a;
-      }}
-      .timer-status {{
-        font-size: 0.82rem;
-        color: #64748b;
-        font-weight: 600;
-      }}
-      .timer-display {{
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-      }}
-      .timer-number {{
-        font-size: 2.4rem;
-        font-weight: 900;
-        letter-spacing: -0.05em;
-        line-height: 1;
-      }}
-      .timer-meta {{
-        display: flex;
-        flex-direction: column;
-        gap: 0.2rem;
-        align-items: flex-end;
-      }}
-      .timer-meta .big {{
-        font-weight: 800;
-        color: #0f172a;
-        font-size: 1rem;
-      }}
-      .timer-meta .small {{
-        color: #64748b;
-        font-size: 0.86rem;
-      }}
-      .timer-bar {{
-        width: 100%;
-        height: 10px;
-        border-radius: 999px;
-        background: rgba(15, 23, 42, 0.08);
-        overflow: hidden;
-        margin-top: 0.85rem;
-      }}
-      .timer-fill {{
-        height: 100%;
-        border-radius: 999px;
-        transition: width 0.9s linear, background 0.4s ease;
-      }}
-      .timer-safe .timer-number {{ color: #0f766e; }}
-      .timer-safe .timer-fill {{ background: linear-gradient(90deg, #14b8a6, #0f766e); }}
-      .timer-warning .timer-number {{ color: #d97706; }}
-      .timer-warning .timer-fill {{ background: linear-gradient(90deg, #f59e0b, #d97706); }}
-      .timer-danger .timer-number {{ color: #dc2626; }}
-      .timer-danger .timer-fill {{ background: linear-gradient(90deg, #ef4444, #dc2626); }}
-    </style>
-    <div id="timer-root" class="timer-shell timer-safe">
-      <div class="timer-top">
-        <div class="timer-heading">Live timer / المؤقت المباشر</div>
-        <div class="timer-status">Updated every second</div>
-      </div>
-      <div class="timer-display">
-        <div id="timer-number" class="timer-number">{duration}</div>
-        <div class="timer-meta">
-          <div id="timer-big" class="big">Ready to answer</div>
-          <div id="timer-small" class="small">30 second challenge</div>
-        </div>
-      </div>
-      <div class="timer-bar">
-        <div id="timer-fill" class="timer-fill" style="width: 100%;"></div>
-      </div>
-    </div>
-    <script>
-      const startMs = {start_ms};
-      const duration = {duration};
-      const root = document.getElementById("timer-root");
-      const numberEl = document.getElementById("timer-number");
-      const bigEl = document.getElementById("timer-big");
-      const smallEl = document.getElementById("timer-small");
-      const fillEl = document.getElementById("timer-fill");
+    .answer-tools{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:12px;
+      margin-top:22px;
+      align-items:start;
+    }
 
-      function tick() {{
-        const elapsed = (Date.now() - startMs) / 1000;
-        const remaining = Math.max(0, duration - elapsed);
-        const remainingInt = Math.ceil(remaining);
-        const ratio = Math.max(0, Math.min(1, remaining / duration));
+    .countdown-box{
+      border-radius:22px;
+      border:1px solid var(--line);
+      background:#fff;
+      padding:14px 18px;
+      min-width:120px;
+      text-align:center;
+    }
 
-        numberEl.textContent = remainingInt;
-        fillEl.style.width = `${{Math.max(2, ratio * 100)}}%`;
+    .countdown-box small{
+      display:block;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.14em;
+      margin-bottom:6px;
+      font-size:10px;
+    }
 
-        if (remainingInt <= 10) {{
-          root.className = "timer-shell timer-danger";
-          bigEl.textContent = remainingInt > 0 ? "Focus now" : "Time is up";
-          smallEl.textContent = remainingInt > 0 ? "Last few seconds" : "Submit your answer";
-        }} else if (remainingInt <= 20) {{
-          root.className = "timer-shell timer-warning";
-          bigEl.textContent = "Keep going";
-          smallEl.textContent = "You are in the final stretch";
-        }} else {{
-          root.className = "timer-shell timer-safe";
-          bigEl.textContent = "Ready to answer";
-          smallEl.textContent = "30 second challenge";
-        }}
-      }}
+    .countdown-box strong{
+      font-size:38px;
+      font-variant-numeric:tabular-nums;
+    }
 
-      tick();
-      setInterval(tick, 1000);
-    </script>
-    """
-    components.html(html_block, height=155)
+    .actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:12px;
+      margin-top:16px;
+      flex-wrap:wrap;
+    }
 
+    .answer-grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:16px;
+      margin-top:22px;
+    }
 
-def render_top_hero() -> None:
-    st.markdown(
-        f"""
-        <div class="hero-shell">
-          <div class="hero-title">Forensic Slides Quiz</div>
-          <div class="hero-subtitle">اختبار شرائح الطب الشرعي مع مؤقت 30 ثانية وعرض نظيف مناسب لكل الأجهزة.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    .answer-card{
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:18px;
+      background:#fff;
+    }
 
+    .answer-card h4{
+      margin:0 0 10px;
+      font-size:16px;
+    }
 
-def render_start_screen() -> None:
-    total_available = len(SLIDES_DATA)
-    render_top_hero()
+    .answer-card p{
+      margin:0;
+      line-height:1.9;
+      color:#111827;
+    }
 
-    num_questions = st.number_input(
-        "Number of slides",
-        min_value=1,
-        max_value=total_available,
-        value=min(int(st.session_state.num_questions), total_available),
-        step=1,
-    )
-    use_timer = st.checkbox("Enable live 30-second timer", value=True)
+    .answer-card.muted p{
+      color:var(--muted);
+    }
 
-    st.session_state.num_questions = int(num_questions)
+    .status-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:16px;
+    }
 
-    st.markdown("<div style='height: 0.25rem;'></div>", unsafe_allow_html=True)
-    if st.button("Start quiz", type="primary", use_container_width=True):
-        start_quiz(int(num_questions), use_timer)
-        st.rerun()
+    .status{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border-radius:999px;
+      padding:10px 14px;
+      border:1px solid var(--line);
+      font-size:14px;
+      background:#fff;
+    }
 
+    .status.success{
+      border-color:#bbf7d0;
+      background:var(--success-bg);
+      color:var(--success);
+    }
 
-def render_image(slide_name: str) -> None:
-    slide_path = IMAGE_DIR / slide_name
-    if slide_path.exists():
-        st.image(str(slide_path), use_container_width=True)
-        return
+    .status.danger{
+      border-color:#fecaca;
+      background:var(--danger-bg);
+      color:var(--danger);
+    }
 
-    st.markdown(
-        f"""
-        <div class="panel-shell">
-          <div class="section-title">Image not found</div>
-          <div class="section-caption">
-            Could not locate <code>{html.escape(slide_name)}</code> inside
-            <code>{html.escape(str(IMAGE_DIR))}</code>.
+    .summary{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .summary-box{
+      border:1px solid var(--line);
+      border-radius:20px;
+      background:#fafafa;
+      padding:16px;
+    }
+
+    .summary-box span{
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:6px;
+    }
+
+    .summary-box strong{
+      font-size:28px;
+    }
+
+    .success-note{
+      margin-top:16px;
+      border:1px solid #bbf7d0;
+      background:var(--success-bg);
+      color:var(--success);
+      border-radius:20px;
+      padding:16px;
+      line-height:1.8;
+    }
+
+    .danger-timer{
+      background:var(--danger-bg);
+      color:var(--danger);
+      border-color:#fecaca;
+    }
+
+    .warning-timer{
+      background:var(--warning-bg);
+      color:var(--warning);
+      border-color:#fed7aa;
+    }
+
+    @media (max-width: 980px){
+      .hero, .main-grid{
+        grid-template-columns:1fr;
+      }
+      .features{
+        grid-template-columns:1fr;
+      }
+      .answer-grid, .summary{
+        grid-template-columns:1fr;
+      }
+      .answer-tools{
+        grid-template-columns:1fr;
+      }
+      h1{font-size:34px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <div>
+        <div class="badge">Forensic Medicine Slides Quiz</div>
+        <h1>واجهة أحدث وأكثر احترافية لاختبار الشرائح</h1>
+        <p class="sub">
+          تصميم أنظف، بطاقات أوضح، مؤقت تنازلي حيّ يظهر 30 ثم 29 ثم 28،
+          وتجربة مراجعة سريعة تساعد الطالب يركز ويتحمس.
+        </p>
+
+        <div class="features">
+          <div class="feature">
+            <div class="icon">✨</div>
+            <h3>واجهة نظيفة</h3>
+            <p>ألوان هادئة وبطاقات مرتبة بدل شكل الأزرار القديم.</p>
+          </div>
+          <div class="feature">
+            <div class="icon">⏱</div>
+            <h3>مؤقت حي</h3>
+            <p>عد تنازلي واضح يزيد الحماس في كل سؤال.</p>
+          </div>
+          <div class="feature">
+            <div class="icon">🧠</div>
+            <h3>مراجعة أسرع</h3>
+            <p>إجابتك والنموذج جنب بعض بشكل منظم.</p>
           </div>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+      </div>
 
+      <div class="panel">
+        <h2>ابدأ الاختبار</h2>
+        <div class="small">
+          اختر عدد الشرائح وفعّل المؤقت لو تحب تجربة أسرع وأكثر حماس.
+        </div>
 
-def render_question_screen() -> None:
-    total_q = len(st.session_state.selected_slides)
-    current_q = st.session_state.current_q_index
+        <div class="field">
+          <label class="label" for="questionCount">عدد الشرائح</label>
+          <input id="questionCount" type="number" min="1" value="10" />
+          <div class="small" id="maxSlidesText" style="margin-top:8px;margin-bottom:0;"></div>
+        </div>
 
-    if current_q >= total_q:
-        st.balloons()
-        st.markdown(
-            """
-            <div class="hero-shell">
-              <div class="hero-kicker">Completed</div>
-              <div class="hero-title">You finished the quiz.</div>
-              <div class="hero-subtitle">
-                Excellent work. You reached the end of the selected slides, and your focus held up until the last question.
+        <div class="switch-row">
+          <div>
+            <div style="font-weight:700;margin-bottom:4px;">تحدي المؤقت</div>
+            <div style="color:var(--muted);font-size:13px;">عرض العد التنازلي من 30 ثانية لكل سؤال.</div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:700;">
+            <input id="useTimer" type="checkbox" checked />
+            تشغيل
+          </label>
+        </div>
+
+        <div class="meta-grid">
+          <div class="meta-box">
+            <span>إجمالي الشرائح</span>
+            <strong id="totalSlidesValue">0</strong>
+          </div>
+          <div class="meta-box">
+            <span>مدة السؤال</span>
+            <strong>30 ثانية</strong>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="startBtn">ابدأ الاختبار الآن</button>
+      </div>
+    </section>
+
+    <section class="main-grid" id="mainGrid">
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;">
+              <div>
+                <h2 class="section-title" style="margin:0 0 6px;">لوحة المتابعة</h2>
+                <p class="section-sub">راقب التقدم، السرعة، وحالة المؤقت أثناء الحل.</p>
+              </div>
+              <div class="timer-badge" id="sideTimerBadge">30s</div>
+            </div>
+
+            <div class="progress-wrap">
+              <div class="progress">
+                <div class="progress-bar" id="progressBar"></div>
+              </div>
+              <div class="progress-row">
+                <span id="progressText">السؤال 1 / 1</span>
+                <span id="progressPercent">0% مكتمل</span>
               </div>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if st.button("Start another round", type="primary", use_container_width=True):
-            reset_quiz()
-            st.rerun()
-        return
+          </div>
 
-    progress_value = (current_q + (1 if st.session_state.show_answer else 0)) / max(total_q, 1)
-    st.progress(progress_value)
-    st.caption(f"Question {current_q + 1} of {total_q}")
+          <div class="card-body">
+            <div class="stats">
+              <div class="stat">
+                <span>تمت الإجابة</span>
+                <strong id="answeredCount">0</strong>
+              </div>
+              <div class="stat">
+                <span>متوسط الزمن</span>
+                <strong id="avgTime">0s</strong>
+              </div>
+              <div class="stat">
+                <span>انتهى المؤقت</span>
+                <strong id="timedOutCount">0</strong>
+              </div>
+              <div class="stat">
+                <span>النمط</span>
+                <strong id="modeValue">Timed</strong>
+              </div>
+            </div>
 
-    current_slide = st.session_state.selected_slides[current_q]
-    slide_data = SLIDES_DATA[current_slide]
-    question_text = slide_data["q"]
-    correct_answer = slide_data["a"]
+            <div class="tip" id="tipBox">
+              اكتب الكلمات المفتاحية أولاً، وبعدها راجع السبب أو الآلية قبل ما تظهر الإجابة النموذجية.
+            </div>
 
-    st.markdown(
-        f"""
-        <div class="question-shell">
-          <span class="question-label">Question</span>
-          <div class="question-text">{html.escape(question_text)}</div>
+            <div style="margin-top:16px;">
+              <button class="btn btn-outline" style="width:100%;" id="resetBtn">إنهاء الاختبار والعودة للإعدادات</button>
+            </div>
+          </div>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+      </div>
 
-    render_image(current_slide)
+      <div id="contentArea"></div>
+    </section>
+  </div>
 
-    if not st.session_state.show_answer:
-        if st.session_state.use_timer:
-            render_timer_widget(st.session_state.q_start_time, TIMER_SECONDS)
+  <script>
+    const ALL_SLIDES = {{ slides|safe }};
+    const TIMER_SECONDS = 30;
 
-        with st.form(key=f"answer_form_{current_q}", clear_on_submit=False):
-            user_input = st.text_area(
-                "Your answer",
-                height=120,
-                placeholder="Type your answer here...",
-                key=f"answer_input_{current_q}",
-                label_visibility="collapsed",
-            )
-            submit = st.form_submit_button("Show answer", type="primary", use_container_width=True)
+    let selectedSlides = [];
+    let currentIndex = 0;
+    let results = [];
+    let answerStartTime = null;
+    let countdownInterval = null;
+    let timeLeft = TIMER_SECONDS;
+    let quizState = "setup";
 
-        if submit:
-            st.session_state.stored_user_answer = user_input
-            st.session_state.time_taken = time.time() - st.session_state.q_start_time
-            st.session_state.show_answer = True
-            st.rerun()
-    else:
-        user_text = st.session_state.stored_user_answer.strip() or "No answer provided."
-        safe_user_text = html.escape(user_text)
-        safe_correct = html.escape(correct_answer)
-        st.markdown(
-            f"""
-            <div class="panel-shell">
-              <div class="section-title">Review</div>
-              <div class="section-caption">Compare your answer with the model answer below.</div>
+    const questionCountInput = document.getElementById("questionCount");
+    const useTimerInput = document.getElementById("useTimer");
+    const startBtn = document.getElementById("startBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const mainGrid = document.getElementById("mainGrid");
+    const contentArea = document.getElementById("contentArea");
+
+    const totalSlidesValue = document.getElementById("totalSlidesValue");
+    const maxSlidesText = document.getElementById("maxSlidesText");
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+    const progressPercent = document.getElementById("progressPercent");
+    const answeredCount = document.getElementById("answeredCount");
+    const avgTime = document.getElementById("avgTime");
+    const timedOutCount = document.getElementById("timedOutCount");
+    const modeValue = document.getElementById("modeValue");
+    const sideTimerBadge = document.getElementById("sideTimerBadge");
+    const tipBox = document.getElementById("tipBox");
+
+    totalSlidesValue.textContent = ALL_SLIDES.length;
+    maxSlidesText.textContent = "الحد الأقصى " + ALL_SLIDES.length + " شريحة.";
+
+    function shuffleArray(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function getQuestionCount() {
+      let count = parseInt(questionCountInput.value || "1", 10);
+      if (isNaN(count)) count = 1;
+      if (count < 1) count = 1;
+      if (count > ALL_SLIDES.length) count = ALL_SLIDES.length;
+      questionCountInput.value = count;
+      return count;
+    }
+
+    function startQuiz() {
+      const count = getQuestionCount();
+      selectedSlides = shuffleArray(ALL_SLIDES).slice(0, count);
+      currentIndex = 0;
+      results = [];
+      quizState = "question";
+      mainGrid.style.display = "grid";
+      startQuestion();
+      updateSidebar();
+    }
+
+    function startQuestion() {
+      clearTimer();
+      quizState = "question";
+      timeLeft = TIMER_SECONDS;
+      answerStartTime = Date.now();
+      renderQuestion();
+      updateSidebar();
+
+      if (useTimerInput.checked) {
+        startTimer();
+      } else {
+        sideTimerBadge.textContent = "No timer";
+        sideTimerBadge.className = "timer-badge";
+      }
+    }
+
+    function startTimer() {
+      updateTimerUI();
+
+      countdownInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - answerStartTime) / 1000);
+        timeLeft = Math.max(TIMER_SECONDS - elapsed, 0);
+        updateTimerUI();
+
+        if (timeLeft <= 0) {
+          clearTimer();
+          revealAnswer(true);
+        }
+      }, 250);
+    }
+
+    function clearTimer() {
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+    }
+
+    function updateTimerUI() {
+      const timerBox = document.getElementById("countdownValue");
+      sideTimerBadge.className = "timer-badge";
+
+      if (timeLeft <= 5) {
+        sideTimerBadge.classList.add("danger-timer");
+      } else if (timeLeft <= 10) {
+        sideTimerBadge.classList.add("warning-timer");
+      }
+
+      sideTimerBadge.textContent = useTimerInput.checked ? (timeLeft + "s") : "No timer";
+
+      if (timerBox) {
+        const holder = timerBox.parentElement;
+        holder.className = "countdown-box";
+        if (timeLeft <= 5) {
+          holder.classList.add("danger-timer");
+        } else if (timeLeft <= 10) {
+          holder.classList.add("warning-timer");
+        }
+        timerBox.textContent = timeLeft;
+      }
+    }
+
+    function revealAnswer(timerExpired = false) {
+      if (quizState !== "question") return;
+
+      clearTimer();
+      const textarea = document.getElementById("userAnswer");
+      const userAnswer = textarea ? textarea.value.trim() : "";
+      const elapsed = Math.max(0, Math.ceil((Date.now() - answerStartTime) / 1000));
+
+      const slide = selectedSlides[currentIndex];
+      results.push({
+        slideId: slide.id,
+        userAnswer,
+        timeTakenSeconds: elapsed,
+        timerExpired
+      });
+
+      quizState = "answer";
+      renderAnswer(slide, results[results.length - 1]);
+      updateSidebar();
+    }
+
+    function nextQuestion() {
+      currentIndex += 1;
+      if (currentIndex >= selectedSlides.length) {
+        quizState = "complete";
+        renderComplete();
+        updateSidebar();
+        return;
+      }
+      startQuestion();
+    }
+
+    function resetQuiz() {
+      clearTimer();
+      selectedSlides = [];
+      currentIndex = 0;
+      results = [];
+      answerStartTime = null;
+      timeLeft = TIMER_SECONDS;
+      quizState = "setup";
+      mainGrid.style.display = "none";
+      contentArea.innerHTML = "";
+      updateSidebar();
+    }
+
+    function updateSidebar() {
+      const total = selectedSlides.length || 1;
+      const answered = results.length;
+      const percent = selectedSlides.length ? Math.round((answered / selectedSlides.length) * 100) : 0;
+      const average = answered ? Math.round(results.reduce((sum, item) => sum + item.timeTakenSeconds, 0) / answered) : 0;
+      const timedOut = results.filter(item => item.timerExpired).length;
+
+      answeredCount.textContent = answered;
+      avgTime.textContent = average + "s";
+      timedOutCount.textContent = timedOut;
+      modeValue.textContent = useTimerInput.checked ? "Timed" : "Practice";
+      progressBar.style.width = percent + "%";
+      progressText.textContent = "السؤال " + Math.min(currentIndex + 1, total) + " / " + total;
+      progressPercent.textContent = percent + "% مكتمل";
+
+      if (quizState === "complete") {
+        tipBox.innerHTML = "ممتاز. خلصت كل الشرائح المحددة. تقدر تبدأ جولة جديدة أو تغيّر عدد الشرائح من الأعلى.";
+        tipBox.className = "success-note";
+      } else {
+        tipBox.innerHTML = "اكتب الكلمات المفتاحية أولاً، وبعدها راجع السبب أو الآلية قبل ما تظهر الإجابة النموذجية.";
+        tipBox.className = "tip";
+      }
+
+      if (!useTimerInput.checked) {
+        sideTimerBadge.textContent = "No timer";
+        sideTimerBadge.className = "timer-badge";
+      }
+    }
+
+    function renderQuestion() {
+      const slide = selectedSlides[currentIndex];
+      const imagePath = "/static/forensic-slides/" + slide.id;
+
+      contentArea.innerHTML = `
+        <div class="card">
+          <div class="card-header">
+            <div class="question-head">
+              <div>
+                <h2 class="section-title" style="margin:0 0 6px;">Slide ${currentIndex + 1}</h2>
+                <p class="section-sub">${slide.id}</p>
+              </div>
+              <div class="pill">Forensic identification challenge</div>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f"""
-            <div class="user-shell">
-              <span class="question-label">Your answer</span>
-              <div class="user-text">{safe_user_text}</div>
+
+            <div class="question-box">
+              <small>Question</small>
+              <p>${escapeHtml(slide.question)}</p>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f"""
-            <div class="answer-shell">
-              <span class="answer-label">Model answer</span>
-              <div class="answer-text">{safe_correct}</div>
+          </div>
+
+          <div class="card-body">
+            <div class="image-box">
+              <img src="${imagePath}" alt="${escapeHtml(slide.question)}"
+                   onerror="this.parentElement.innerHTML='<div class=\\'image-fallback\\'><h3 style=\\'margin:0 0 8px;color:#111827\\'>الصورة غير متاحة حالياً</h3><div>أضف ملفات الصور داخل static/forensic-slides بنفس الأسماء الحالية.</div></div>'">
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
-        elapsed = int(round(st.session_state.time_taken))
-        if st.session_state.use_timer:
-            if elapsed <= TIMER_SECONDS:
-                st.markdown(
-                    f"<div class='time-result-safe'>Time used: {elapsed} seconds out of {TIMER_SECONDS}.</div>",
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    f"<div class='time-result-warning'>Time used: {elapsed} seconds, which is over the 30-second target.</div>",
-                    unsafe_allow_html=True,
-                )
+            <div class="answer-tools">
+              <div>
+                <div class="question-box" style="margin-top:0;">
+                  <small>Write your answer</small>
+                  <p style="margin-top:10px;font-size:14px;color:var(--muted);">اكتب بحرية، وبعدها اعرض النموذج للمقارنة السريعة.</p>
+                </div>
+              </div>
 
-        next_col, reset_col = st.columns(2)
-        with next_col:
-            if st.button("Next slide", type="primary", use_container_width=True):
-                st.session_state.current_q_index += 1
-                st.session_state.show_answer = False
-                st.session_state.stored_user_answer = ""
-                st.session_state.q_start_time = time.time()
-                st.rerun()
-        with reset_col:
-            if st.button("End quiz", use_container_width=True):
-                reset_quiz()
-                st.rerun()
+              ${
+                useTimerInput.checked
+                  ? `<div class="countdown-box"><small>Countdown</small><strong id="countdownValue">${timeLeft}</strong></div>`
+                  : ``
+              }
+            </div>
 
+            <div style="margin-top:16px;">
+              <textarea id="userAnswer" placeholder="Write your answer here..."></textarea>
+            </div>
 
-init_state()
+            <div class="actions">
+              <button class="btn btn-primary" style="width:auto;" onclick="revealAnswer(false)">تأكيد وإظهار الإجابة</button>
+            </div>
+          </div>
+        </div>
+      `;
 
-if not st.session_state.quiz_started:
-    render_start_screen()
-else:
-    render_question_screen()
+      updateTimerUI();
+    }
+
+    function renderAnswer(slide, result) {
+      contentArea.innerHTML = `
+        <div class="card">
+          <div class="card-header">
+            <div class="question-head">
+              <div>
+                <h2 class="section-title" style="margin:0 0 6px;">Slide ${currentIndex + 1}</h2>
+                <p class="section-sub">${slide.id}</p>
+              </div>
+              <div class="pill">Answer review</div>
+            </div>
+
+            <div class="question-box">
+              <small>Question</small>
+              <p>${escapeHtml(slide.question)}</p>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="image-box">
+              <img src="/static/forensic-slides/${slide.id}" alt="${escapeHtml(slide.question)}"
+                   onerror="this.parentElement.innerHTML='<div class=\\'image-fallback\\'><h3 style=\\'margin:0 0 8px;color:#111827\\'>الصورة غير متاحة حالياً</h3><div>أضف ملفات الصور داخل static/forensic-slides بنفس الأسماء الحالية.</div></div>'">
+            </div>
+
+            <div class="answer-grid">
+              <div class="answer-card ${result.userAnswer ? '' : 'muted'}">
+                <h4>إجابتك</h4>
+                <p>${result.userAnswer ? escapeHtml(result.userAnswer).replace(/\\n/g, "<br>") : "لم يتم إدخال إجابة."}</p>
+              </div>
+
+              <div class="answer-card">
+                <h4>الإجابة النموذجية</h4>
+                <p>${escapeHtml(slide.answer)}</p>
+              </div>
+            </div>
+
+            <div class="status-row">
+              <div class="status ${result.timerExpired ? 'danger' : 'success'}">
+                ${result.timerExpired ? 'انتهى الوقت قبل إظهار الإجابة' : 'تم عرض الإجابة في الوقت المناسب'}
+              </div>
+              <div class="status">
+                الزمن المستغرق ${result.timeTakenSeconds} ثانية
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-primary" style="width:auto;" onclick="nextQuestion()">
+                ${currentIndex + 1 >= selectedSlides.length ? 'إنهاء الجلسة' : 'السؤال التالي'}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderComplete() {
+      const average = results.length ? Math.round(results.reduce((sum, item) => sum + item.timeTakenSeconds, 0) / results.length) : 0;
+      const timedOut = results.filter(item => item.timerExpired).length;
+
+      contentArea.innerHTML = `
+        <div class="card">
+          <div class="card-header">
+            <h2 class="section-title" style="margin:0 0 8px;">Session complete</h2>
+            <p class="section-sub">راجع أرقامك بسرعة ثم ابدأ اختبار جديد لو تحب.</p>
+          </div>
+
+          <div class="card-body">
+            <div class="summary">
+              <div class="summary-box">
+                <span>الشرائح</span>
+                <strong>${selectedSlides.length}</strong>
+              </div>
+              <div class="summary-box">
+                <span>متوسط الزمن</span>
+                <strong>${average}s</strong>
+              </div>
+              <div class="summary-box">
+                <span>انتهاء المؤقت</span>
+                <strong>${timedOut}</strong>
+              </div>
+            </div>
+
+            <div class="success-note" style="margin-top:18px;">
+              ممتاز. خلصت الجلسة بنجاح، وتقدر تبدأ اختبار جديد وقت ما تحب.
+            </div>
+
+            <div class="actions" style="margin-top:18px;">
+              <button class="btn btn-primary" style="width:auto;" onclick="resetQuiz()">ابدأ اختبار جديد</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text || "";
+      return div.innerHTML;
+    }
+
+    startBtn.addEventListener("click", startQuiz);
+    resetBtn.addEventListener("click", resetQuiz);
+    window.revealAnswer = revealAnswer;
+    window.nextQuestion = nextQuestion;
+    window.resetQuiz = resetQuiz;
+  </script>
+</body>
+</html>
+"""
+
+@app.route("/")
+def home():
+    return render_template_string(HTML, slides=json.dumps(FORENSIC_SLIDES, ensure_ascii=False))
+
+if __name__ == "__main__":
+    app.run(debug=True)
