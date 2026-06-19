@@ -3,7 +3,6 @@ import random
 import time
 import os
 from PIL import Image
-from streamlit_autorefresh import rerun_if_updated
 
 # ==========================================
 # إعدادات الصفحة والتصميم الاحترافي (CSS)
@@ -61,12 +60,6 @@ st.markdown("""
         direction: ltr;
         text-align: left;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-        transition: all 0.3s ease;
-    }
-    
-    .question-box:hover {
-        box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
     }
     
     /* صندوق إجابة المستخدم */
@@ -80,7 +73,6 @@ st.markdown("""
         margin-bottom: 15px;
         direction: ltr;
         text-align: left;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
     /* صندوق الإجابة النموذجية */
@@ -95,7 +87,6 @@ st.markdown("""
         margin-bottom: 20px;
         direction: ltr;
         text-align: left;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
     
     /* المؤقت التنازلي */
@@ -115,7 +106,6 @@ st.markdown("""
         color: #D97706;
         font-family: 'Courier New', monospace;
         letter-spacing: 3px;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     .timer-label {
@@ -123,30 +113,6 @@ st.markdown("""
         color: #B45309;
         font-weight: 600;
         margin-top: 10px;
-    }
-    
-    /* المؤقت - حالة النجاح */
-    .time-success {
-        color: #16A34A;
-        font-weight: bold;
-        font-size: 1.2em;
-        text-align: center;
-        background-color: #F0FDF4;
-        padding: 12px;
-        border-radius: 8px;
-        border-left: 4px solid #16A34A;
-    }
-    
-    /* المؤقت - حالة التحذير */
-    .time-warning {
-        color: #DC2626;
-        font-weight: bold;
-        font-size: 1.2em;
-        text-align: center;
-        background-color: #FEF2F2;
-        padding: 12px;
-        border-radius: 8px;
-        border-left: 4px solid #DC2626;
     }
     
     /* شريط التقدم */
@@ -161,59 +127,13 @@ st.markdown("""
     .stButton > button {
         border-radius: 10px;
         font-weight: 600;
-        font-size: 1.05em;
         padding: 12px 24px;
         transition: all 0.3s ease;
-        border: none;
     }
     
     .stButton > button:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    }
-    
-    /* مربع الإدخال */
-    .stTextArea > label {
-        font-weight: 600;
-        color: #1E3A8A;
-    }
-    
-    /* الفاصل */
-    hr {
-        border: none;
-        height: 2px;
-        background: linear-gradient(90deg, #E5E7EB 0%, #D1D5DB 50%, #E5E7EB 100%);
-        margin: 30px 0;
-    }
-    
-    /* رسالة النجاح */
-    .stSuccess {
-        background-color: #F0FDF4 !important;
-        border-left: 4px solid #16A34A !important;
-        border-radius: 8px !important;
-    }
-    
-    /* رسالة المعلومات */
-    .stInfo {
-        background-color: #EFF6FF !important;
-        border-left: 4px solid #3B82F6 !important;
-        border-radius: 8px !important;
-    }
-    
-    /* رسالة الخطأ */
-    .stError {
-        background-color: #FEF2F2 !important;
-        border-left: 4px solid #DC2626 !important;
-        border-radius: 8px !important;
-    }
-    
-    /* تحسينات عامة */
-    body {
-        background-color: #F8FAFC;
-    }
-    
-    .main {
-        background-color: #FFFFFF;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -399,7 +319,7 @@ else:
                 
                 st.markdown(f"""
                     <div class='timer-box'>
-                        <div class='timer-display' style='color: {timer_color};'>{minutes:02d}:{seconds:02d}</div>
+                        <div id='countdown' class='timer-display' style='color: {timer_color};'>{minutes:02d}:{seconds:02d}</div>
                         <div class='timer-label'>⏱️ الوقت المتبقي</div>
                     </div>
                 """, unsafe_allow_html=True)
@@ -410,17 +330,11 @@ else:
                     st.session_state.stored_user_answer = ""
                     st.session_state.time_taken = st.session_state.timer_duration
                     st.session_state.show_answer = True
-                    time.sleep(1)
                     st.rerun()
                 
-                # تحديث الصفحة كل ثانية
-                st.markdown("""
-                    <script>
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 1000);
-                    </script>
-                """, unsafe_allow_html=True)
+                # حل المؤقت بدون مكتبات خارجية: استخدام empty وتكرار
+                time.sleep(1)
+                st.rerun()
                 
             # مربع إدخال النص
             user_input = st.text_area("✍️ Write your answer here / اكتب إجابتك هنا:", height=100)
@@ -446,9 +360,9 @@ else:
             if st.session_state.use_timer:
                 t = int(st.session_state.time_taken)
                 if t <= st.session_state.timer_duration:
-                    st.markdown(f"<div class='time-success'>⏱️ استغرقت {t} ثانية (ممتاز! ⚡)</div>", unsafe_allow_html=True)
+                    st.info(f"⏱️ استغرقت {t} ثانية (ممتاز! ⚡)")
                 else:
-                    st.markdown(f"<div class='time-warning'>⚠️ استغرقت {t} ثانية (تجاوزت الحد الزمني 😅)</div>", unsafe_allow_html=True)
+                    st.warning(f"⚠️ استغرقت {t} ثانية (تجاوزت الحد الزمني 😅)")
             
             st.markdown("<br>", unsafe_allow_html=True)
             
