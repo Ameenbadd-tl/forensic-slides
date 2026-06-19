@@ -1,22 +1,16 @@
-import base64
-import json
-import mimetypes
+import html
+import random
+import time
 from pathlib import Path
 
 import streamlit as st
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="Forensic Slides Quiz", page_icon="🧠", layout="wide")
 
-st.markdown(
-    """
-    <style>
-      #MainMenu, header, footer {visibility: hidden;}
-      .block-container {padding-top: 0.5rem; padding-bottom: 0.5rem; max-width: 100%;}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+BASE_DIR = Path(__file__).resolve().parent
+IMAGE_DIR = BASE_DIR / "forensic-slides"
+TIMER_SECONDS = 30
+
 
 SLIDES_DATA = {
     "img35.jpg": {"q": "Identify the type of injury and its cause.", "a": "Extensive bruises/ contusions cause by blunt truma"},
@@ -76,1004 +70,717 @@ SLIDES_DATA = {
 
 FOLDER_NAME = "forensic-slides"
 
-
-def file_to_data_url(path: Path) -> str | None:
-    if not path.exists() or not path.is_file():
-        return None
-
-    mime_type, _ = mimetypes.guess_type(str(path))
-    mime_type = mime_type or "application/octet-stream"
-    encoded = base64.b64encode(path.read_bytes()).decode("utf-8")
-    return f"data:{mime_type};base64,{encoded}"
+st.set_page_config(
+    page_title="Forensic Slides Quiz",
+    page_icon="🔬",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
 
 
-def resolve_image(slide_id: str) -> str | None:
-    base_dir = Path(__file__).parent
-    search_paths = [
-        base_dir / FOLDER_NAME / slide_id,
-        base_dir / "static" / FOLDER_NAME / slide_id,
-        base_dir / "images" / slide_id,
-        base_dir / slide_id,
-    ]
+st.markdown(
+    """
+    <style>
+    :root {
+        --bg: #f3f6fb;
+        --panel: rgba(255, 255, 255, 0.78);
+        --panel-strong: rgba(255, 255, 255, 0.94);
+        --border: rgba(15, 23, 42, 0.08);
+        --text: #0f172a;
+        --muted: #64748b;
+        --accent: #0f766e;
+        --accent-dark: #0b5b56;
+        --accent-soft: rgba(15, 118, 110, 0.12);
+        --warning: #d97706;
+        --danger: #dc2626;
+        --shadow: 0 18px 50px rgba(15, 23, 42, 0.10);
+    }
 
-    for path in search_paths:
-        data_url = file_to_data_url(path)
-        if data_url:
-            return data_url
-    return None
+    .stApp {
+        background:
+            radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 34%),
+            radial-gradient(circle at top right, rgba(59, 130, 246, 0.10), transparent 30%),
+            linear-gradient(180deg, #eef3f9 0%, #f8fafc 45%, #eef2f7 100%);
+        color: var(--text);
+    }
 
+    #MainMenu, footer, header {
+        visibility: hidden;
+    }
 
-slides_with_images = []
-for file_name, item in SLIDES_DATA.items():
-    slides_with_images.append(
-        {
-            "id": file_name,
-            "question": item["q"],
-            "answer": item["a"],
-            "image": resolve_image(file_name),
+    .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 2.5rem;
+        max-width: 1180px;
+    }
+
+    .hero-shell,
+    .panel-shell,
+    .question-shell,
+    .answer-shell,
+    .timer-shell {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+    }
+
+    .hero-shell {
+        padding: 1.5rem 1.5rem 1.25rem 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .hero-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent-dark);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        margin-bottom: 0.9rem;
+    }
+
+    .hero-title {
+        font-size: clamp(2rem, 3vw, 3.2rem);
+        font-weight: 900;
+        line-height: 1.05;
+        color: var(--text);
+        margin-bottom: 0.45rem;
+    }
+
+    .hero-subtitle {
+        color: var(--muted);
+        font-size: 1.02rem;
+        line-height: 1.8;
+        margin-bottom: 0;
+    }
+
+    .mini-stat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        padding: 1rem 1rem 0.9rem 1rem;
+        border-radius: 18px;
+        background: rgba(15, 23, 42, 0.03);
+        border: 1px solid rgba(15, 23, 42, 0.05);
+    }
+
+    .mini-stat .label {
+        color: var(--muted);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .mini-stat .value {
+        color: var(--text);
+        font-size: 1.3rem;
+        font-weight: 800;
+    }
+
+    .panel-shell {
+        padding: 1.1rem;
+        margin-bottom: 1rem;
+    }
+
+    .section-title {
+        color: var(--text);
+        font-size: 1.12rem;
+        font-weight: 800;
+        margin-bottom: 0.3rem;
+    }
+
+    .section-caption {
+        color: var(--muted);
+        font-size: 0.92rem;
+        line-height: 1.7;
+        margin-bottom: 1rem;
+    }
+
+    .question-shell,
+    .answer-shell {
+        padding: 1.1rem 1.15rem;
+    }
+
+    .question-shell {
+        border-left: 6px solid var(--accent);
+        margin-bottom: 0.9rem;
+    }
+
+    .answer-shell {
+        border-left: 6px solid #16a34a;
+        background: rgba(240, 253, 244, 0.72);
+        margin-bottom: 0.9rem;
+    }
+
+    .question-label,
+    .answer-label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 0.35rem;
+    }
+
+    .question-text,
+    .answer-text,
+    .user-text {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: var(--text);
+        word-break: break-word;
+    }
+
+    .answer-text {
+        font-weight: 700;
+    }
+
+    .user-shell {
+        padding: 0.95rem 1.05rem;
+        background: rgba(255, 255, 255, 0.75);
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 18px;
+        margin-bottom: 0.9rem;
+    }
+
+    .timer-shell {
+        padding: 1rem 1.1rem;
+        margin-bottom: 1rem;
+        background: rgba(15, 23, 42, 0.04);
+    }
+
+    .timer-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 1rem;
+        margin-bottom: 0.55rem;
+    }
+
+    .timer-heading {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--text);
+    }
+
+    .timer-status {
+        font-size: 0.82rem;
+        color: var(--muted);
+        font-weight: 600;
+    }
+
+    .timer-display {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .timer-number {
+        font-size: 2.4rem;
+        font-weight: 900;
+        letter-spacing: -0.05em;
+        line-height: 1;
+    }
+
+    .timer-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        align-items: flex-end;
+    }
+
+    .timer-meta .big {
+        font-weight: 800;
+        color: var(--text);
+        font-size: 1rem;
+    }
+
+    .timer-meta .small {
+        color: var(--muted);
+        font-size: 0.86rem;
+    }
+
+    .timer-bar {
+        width: 100%;
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+        margin-top: 0.85rem;
+    }
+
+    .timer-fill {
+        height: 100%;
+        border-radius: 999px;
+        transition: width 0.9s linear, background 0.4s ease;
+    }
+
+    div[data-testid="stImage"] {
+        display: flex;
+        justify-content: center;
+        margin: 0.2rem 0 1rem 0;
+    }
+
+    div[data-testid="stImage"] img {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        object-fit: contain;
+        border-radius: 18px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.10);
+    }
+
+    @media (max-width: 640px) {
+        .hero-title {
+            font-size: 1.75rem;
         }
+
+        .question-text,
+        .answer-text,
+        .user-text {
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        div[data-testid="stImage"] img {
+            max-height: 46vh;
+        }
+    }
+
+    @media (min-width: 641px) and (max-width: 1024px) {
+        div[data-testid="stImage"] img {
+            max-height: 58vh;
+        }
+    }
+
+    @media (min-width: 1025px) {
+        div[data-testid="stImage"] img {
+            max-height: 68vh;
+        }
+    }
+
+    .timer-safe .timer-number { color: var(--accent); }
+    .timer-safe .timer-fill { background: linear-gradient(90deg, #14b8a6, #0f766e); }
+    .timer-warning .timer-number { color: var(--warning); }
+    .timer-warning .timer-fill { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .timer-danger .timer-number { color: var(--danger); }
+    .timer-danger .timer-fill { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
+    .time-result-safe {
+        color: #0f766e;
+        font-weight: 800;
+        font-size: 1rem;
+    }
+
+    .time-result-warning {
+        color: #b91c1c;
+        font-weight: 800;
+        font-size: 1rem;
+    }
+
+    div.stButton > button {
+        width: 100%;
+        border-radius: 16px;
+        border: 1px solid rgba(15, 23, 42, 0.10);
+        padding: 0.82rem 1rem;
+        font-weight: 800;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    div.stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+    }
+
+    div[data-testid="stNumberInput"] input,
+    div[data-testid="stTextArea"] textarea {
+        border-radius: 16px;
+        border: 1px solid rgba(15, 23, 42, 0.10);
+        background: rgba(255, 255, 255, 0.95);
+        color: var(--text);
+    }
+
+    div[data-testid="stCheckbox"] label {
+        color: var(--text);
+        font-weight: 600;
+    }
+
+    .stProgress > div > div > div {
+        background: linear-gradient(90deg, #14b8a6, #0f766e) !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+def init_state() -> None:
+    defaults = {
+        "quiz_started": False,
+        "current_q_index": 0,
+        "selected_slides": [],
+        "show_answer": False,
+        "use_timer": False,
+        "q_start_time": 0.0,
+        "time_taken": 0.0,
+        "stored_user_answer": "",
+        "num_questions": 10,
+    }
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+
+def reset_quiz() -> None:
+    st.session_state.quiz_started = False
+    st.session_state.current_q_index = 0
+    st.session_state.selected_slides = []
+    st.session_state.show_answer = False
+    st.session_state.stored_user_answer = ""
+    st.session_state.time_taken = 0.0
+    st.session_state.q_start_time = 0.0
+
+
+def start_quiz(num_questions: int, use_timer: bool) -> None:
+    all_slides = list(SLIDES_DATA.keys())
+    st.session_state.selected_slides = random.sample(all_slides, num_questions)
+    st.session_state.quiz_started = True
+    st.session_state.current_q_index = 0
+    st.session_state.show_answer = False
+    st.session_state.stored_user_answer = ""
+    st.session_state.time_taken = 0.0
+    st.session_state.use_timer = use_timer
+    st.session_state.q_start_time = time.time()
+
+
+def render_timer_widget(start_ts: float, duration: int = TIMER_SECONDS) -> None:
+    start_ms = int(start_ts * 1000)
+    html_block = f"""
+    <style>
+      :root {{
+        color-scheme: light;
+      }}
+      body {{
+        margin: 0;
+        background: transparent;
+        font-family: Inter, "Segoe UI", Tahoma, sans-serif;
+      }}
+      .timer-shell {{
+        box-sizing: border-box;
+        width: 100%;
+        padding: 1rem 1.1rem;
+        border-radius: 22px;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+      }}
+      .timer-top {{
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 1rem;
+        margin-bottom: 0.55rem;
+      }}
+      .timer-heading {{
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #0f172a;
+      }}
+      .timer-status {{
+        font-size: 0.82rem;
+        color: #64748b;
+        font-weight: 600;
+      }}
+      .timer-display {{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }}
+      .timer-number {{
+        font-size: 2.4rem;
+        font-weight: 900;
+        letter-spacing: -0.05em;
+        line-height: 1;
+      }}
+      .timer-meta {{
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        align-items: flex-end;
+      }}
+      .timer-meta .big {{
+        font-weight: 800;
+        color: #0f172a;
+        font-size: 1rem;
+      }}
+      .timer-meta .small {{
+        color: #64748b;
+        font-size: 0.86rem;
+      }}
+      .timer-bar {{
+        width: 100%;
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+        margin-top: 0.85rem;
+      }}
+      .timer-fill {{
+        height: 100%;
+        border-radius: 999px;
+        transition: width 0.9s linear, background 0.4s ease;
+      }}
+      .timer-safe .timer-number {{ color: #0f766e; }}
+      .timer-safe .timer-fill {{ background: linear-gradient(90deg, #14b8a6, #0f766e); }}
+      .timer-warning .timer-number {{ color: #d97706; }}
+      .timer-warning .timer-fill {{ background: linear-gradient(90deg, #f59e0b, #d97706); }}
+      .timer-danger .timer-number {{ color: #dc2626; }}
+      .timer-danger .timer-fill {{ background: linear-gradient(90deg, #ef4444, #dc2626); }}
+    </style>
+    <div id="timer-root" class="timer-shell timer-safe">
+      <div class="timer-top">
+        <div class="timer-heading">Live timer / المؤقت المباشر</div>
+        <div class="timer-status">Updated every second</div>
+      </div>
+      <div class="timer-display">
+        <div id="timer-number" class="timer-number">{duration}</div>
+        <div class="timer-meta">
+          <div id="timer-big" class="big">Ready to answer</div>
+          <div id="timer-small" class="small">30 second challenge</div>
+        </div>
+      </div>
+      <div class="timer-bar">
+        <div id="timer-fill" class="timer-fill" style="width: 100%;"></div>
+      </div>
+    </div>
+    <script>
+      const startMs = {start_ms};
+      const duration = {duration};
+      const root = document.getElementById("timer-root");
+      const numberEl = document.getElementById("timer-number");
+      const bigEl = document.getElementById("timer-big");
+      const smallEl = document.getElementById("timer-small");
+      const fillEl = document.getElementById("timer-fill");
+
+      function tick() {{
+        const elapsed = (Date.now() - startMs) / 1000;
+        const remaining = Math.max(0, duration - elapsed);
+        const remainingInt = Math.ceil(remaining);
+        const ratio = Math.max(0, Math.min(1, remaining / duration));
+
+        numberEl.textContent = remainingInt;
+        fillEl.style.width = `${{Math.max(2, ratio * 100)}}%`;
+
+        if (remainingInt <= 10) {{
+          root.className = "timer-shell timer-danger";
+          bigEl.textContent = remainingInt > 0 ? "Focus now" : "Time is up";
+          smallEl.textContent = remainingInt > 0 ? "Last few seconds" : "Submit your answer";
+        }} else if (remainingInt <= 20) {{
+          root.className = "timer-shell timer-warning";
+          bigEl.textContent = "Keep going";
+          smallEl.textContent = "You are in the final stretch";
+        }} else {{
+          root.className = "timer-shell timer-safe";
+          bigEl.textContent = "Ready to answer";
+          smallEl.textContent = "30 second challenge";
+        }}
+      }}
+
+      tick();
+      setInterval(tick, 1000);
+    </script>
+    """
+    components.html(html_block, height=155)
+
+
+def render_top_hero() -> None:
+    st.markdown(
+        f"""
+        <div class="hero-shell">
+          <div class="hero-title">Forensic Slides Quiz</div>
+          <div class="hero-subtitle">اختبار شرائح الطب الشرعي مع مؤقت 30 ثانية وعرض نظيف مناسب لكل الأجهزة.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-slides_json = json.dumps(slides_with_images, ensure_ascii=False)
 
-HTML = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Forensic Quiz</title>
-  <style>
-    :root{
-      --bg:#f6f7fb;
-      --card:#ffffff;
-      --text:#111827;
-      --muted:#6b7280;
-      --line:#e5e7eb;
-      --primary:#111827;
-      --primary-2:#374151;
-      --success:#166534;
-      --success-bg:#ecfdf3;
-      --danger:#b91c1c;
-      --danger-bg:#fef2f2;
-      --warning:#92400e;
-      --warning-bg:#fff7ed;
-      --shadow:0 12px 32px rgba(17,24,39,.08);
-    }
-
-    *{box-sizing:border-box}
-    html,body{
-      margin:0;
-      padding:0;
-      font-family:Inter,Segoe UI,Tahoma,Arial,sans-serif;
-      background:var(--bg);
-      color:var(--text);
-    }
-
-    body{padding:20px}
-
-    .container{
-      max-width:1280px;
-      margin:0 auto;
-    }
-
-    .top-panel{
-      max-width:720px;
-      margin:0 auto 24px;
-      background:rgba(255,255,255,.96);
-      border:1px solid var(--line);
-      border-radius:28px;
-      box-shadow:var(--shadow);
-      padding:24px;
-    }
-
-    .top-panel h2{
-      margin:0 0 8px;
-      font-size:24px;
-    }
-
-    .small{
-      color:var(--muted);
-      line-height:1.7;
-      font-size:14px;
-      margin-bottom:18px;
-    }
-
-    .field{margin-bottom:18px}
-    .label{
-      display:block;
-      margin-bottom:8px;
-      font-size:14px;
-      font-weight:600;
-    }
-
-    input[type="number"], textarea{
-      width:100%;
-      border:1px solid var(--line);
-      border-radius:16px;
-      padding:14px 16px;
-      font-size:16px;
-      outline:none;
-      background:#fff;
-      color:var(--text);
-    }
-
-    input[type="number"]:focus, textarea:focus{
-      border-color:#9ca3af;
-      box-shadow:0 0 0 4px rgba(17,24,39,.06);
-    }
-
-    textarea{
-      min-height:160px;
-      resize:vertical;
-      line-height:1.8;
-    }
-
-    .switch-row{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      border:1px solid var(--line);
-      border-radius:20px;
-      padding:16px;
-      margin-bottom:18px;
-      background:#fafafa;
-    }
-
-    .meta-grid{
-      display:grid;
-      grid-template-columns:repeat(2,1fr);
-      gap:12px;
-      margin-bottom:18px;
-    }
-
-    .meta-box{
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:14px;
-      background:#fafafa;
-    }
-
-    .meta-box span{
-      display:block;
-      color:var(--muted);
-      font-size:12px;
-      margin-bottom:6px;
-    }
-
-    .meta-box strong{
-      font-size:20px;
-    }
-
-    .btn{
-      border:none;
-      border-radius:18px;
-      padding:14px 20px;
-      font-size:15px;
-      font-weight:700;
-      cursor:pointer;
-      transition:.2s ease;
-    }
-
-    .btn:hover{transform:translateY(-1px)}
-    .btn-primary{
-      background:var(--primary);
-      color:#fff;
-      width:100%;
-    }
-    .btn-primary:hover{background:var(--primary-2)}
-    .btn-outline{
-      background:#fff;
-      color:var(--text);
-      border:1px solid var(--line);
-    }
-
-    .main-grid{
-      display:none;
-      grid-template-columns:.74fr 1.26fr;
-      gap:24px;
-      margin-top:24px;
-    }
-
-    .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:28px;
-      box-shadow:var(--shadow);
-      overflow:hidden;
-    }
-
-    .card-header{
-      padding:24px;
-      border-bottom:1px solid var(--line);
-      background:#fafafa;
-    }
-
-    .card-body{
-      padding:24px;
-    }
-
-    .section-title{
-      margin:0 0 8px;
-      font-size:24px;
-    }
-
-    .section-sub{
-      margin:0;
-      color:var(--muted);
-      line-height:1.7;
-      font-size:14px;
-    }
-
-    .timer-badge{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-width:88px;
-      height:42px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background:#fff;
-      font-weight:800;
-      font-size:15px;
-    }
-
-    .progress-wrap{
-      margin-top:18px;
-    }
-
-    .progress{
-      width:100%;
-      height:9px;
-      border-radius:999px;
-      background:#eceff4;
-      overflow:hidden;
-    }
-
-    .progress-bar{
-      height:100%;
-      width:0%;
-      background:linear-gradient(90deg,#111827,#4b5563);
-      transition:.3s ease;
-    }
-
-    .progress-row{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      margin-top:10px;
-      color:var(--muted);
-      font-size:14px;
-    }
-
-    .stats{
-      display:grid;
-      grid-template-columns:repeat(2,1fr);
-      gap:12px;
-      margin-top:16px;
-    }
-
-    .stat{
-      border:1px solid var(--line);
-      background:#fff;
-      border-radius:20px;
-      padding:16px;
-    }
-
-    .stat span{
-      display:block;
-      color:var(--muted);
-      font-size:12px;
-      margin-bottom:8px;
-      text-transform:uppercase;
-      letter-spacing:.08em;
-    }
-
-    .stat strong{
-      font-size:28px;
-    }
-
-    .tip{
-      margin-top:16px;
-      border:1px solid var(--line);
-      background:#fafafa;
-      border-radius:20px;
-      padding:16px;
-      color:var(--muted);
-      line-height:1.8;
-      font-size:14px;
-    }
-
-    .question-head{
-      display:flex;
-      justify-content:space-between;
-      gap:16px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-
-    .pill{
-      border:1px solid var(--line);
-      padding:10px 14px;
-      border-radius:999px;
-      background:#fff;
-      color:var(--muted);
-      font-size:14px;
-    }
-
-    .question-box{
-      margin-top:18px;
-      border:1px solid var(--line);
-      border-radius:22px;
-      padding:18px;
-      background:#fff;
-    }
-
-    .question-box small{
-      color:var(--muted);
-      text-transform:uppercase;
-      letter-spacing:.12em;
-      font-weight:700;
-      font-size:11px;
-    }
-
-    .question-box p{
-      margin:12px 0 0;
-      font-size:20px;
-      line-height:1.8;
-    }
-
-    .image-box{
-      margin-top:22px;
-      border:1px solid var(--line);
-      border-radius:28px;
-      overflow:hidden;
-      background:#f8fafc;
-      min-height:340px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-
-    .image-box img{
-      width:100%;
-      max-height:560px;
-      object-fit:contain;
-      display:block;
-      background:#f9fafb;
-    }
-
-    .image-fallback{
-      text-align:center;
-      padding:40px 24px;
-      color:var(--muted);
-      line-height:1.8;
-    }
-
-    .answer-tools{
-      display:grid;
-      grid-template-columns:1fr auto;
-      gap:12px;
-      margin-top:22px;
-      align-items:start;
-    }
-
-    .countdown-box{
-      border-radius:22px;
-      border:1px solid var(--line);
-      background:#fff;
-      padding:14px 18px;
-      min-width:120px;
-      text-align:center;
-    }
-
-    .countdown-box small{
-      display:block;
-      color:var(--muted);
-      text-transform:uppercase;
-      letter-spacing:.14em;
-      margin-bottom:6px;
-      font-size:10px;
-    }
-
-    .countdown-box strong{
-      font-size:38px;
-      font-variant-numeric:tabular-nums;
-    }
-
-    .actions{
-      display:flex;
-      justify-content:flex-end;
-      gap:12px;
-      margin-top:16px;
-      flex-wrap:wrap;
-    }
-
-    .answer-grid{
-      display:grid;
-      grid-template-columns:repeat(2,1fr);
-      gap:16px;
-      margin-top:22px;
-    }
-
-    .answer-card{
-      border:1px solid var(--line);
-      border-radius:22px;
-      padding:18px;
-      background:#fff;
-    }
-
-    .answer-card h4{
-      margin:0 0 10px;
-      font-size:16px;
-    }
-
-    .answer-card p{
-      margin:0;
-      line-height:1.9;
-      color:#111827;
-    }
-
-    .answer-card.muted p{
-      color:var(--muted);
-    }
-
-    .status-row{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      margin-top:16px;
-    }
-
-    .status{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      border-radius:999px;
-      padding:10px 14px;
-      border:1px solid var(--line);
-      font-size:14px;
-      background:#fff;
-    }
-
-    .status.success{
-      border-color:#bbf7d0;
-      background:var(--success-bg);
-      color:var(--success);
-    }
-
-    .status.danger{
-      border-color:#fecaca;
-      background:var(--danger-bg);
-      color:var(--danger);
-    }
-
-    .summary{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:12px;
-      margin-top:18px;
-    }
-
-    .summary-box{
-      border:1px solid var(--line);
-      border-radius:20px;
-      background:#fafafa;
-      padding:16px;
-    }
-
-    .summary-box span{
-      display:block;
-      color:var(--muted);
-      font-size:12px;
-      margin-bottom:6px;
-    }
-
-    .summary-box strong{
-      font-size:28px;
-    }
-
-    .success-note{
-      margin-top:16px;
-      border:1px solid #bbf7d0;
-      background:var(--success-bg);
-      color:var(--success);
-      border-radius:20px;
-      padding:16px;
-      line-height:1.8;
-    }
-
-    .danger-timer{
-      background:var(--danger-bg);
-      color:var(--danger);
-      border-color:#fecaca;
-    }
-
-    .warning-timer{
-      background:var(--warning-bg);
-      color:var(--warning);
-      border-color:#fed7aa;
-    }
-
-    @media (max-width: 980px){
-      .main-grid{
-        grid-template-columns:1fr;
-      }
-      .answer-grid, .summary{
-        grid-template-columns:1fr;
-      }
-      .answer-tools{
-        grid-template-columns:1fr;
-      }
-      .top-panel{
-        max-width:100%;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <section class="top-panel">
-      <h2>Start Quiz</h2>
-      <div class="small">
-        اختر عدد الشرائح وفعّل المؤقت إذا رغبت.
-      </div>
-
-      <div class="field">
-        <label class="label" for="questionCount">عدد الشرائح</label>
-        <input id="questionCount" type="number" min="1" value="10" />
-        <div class="small" id="maxSlidesText" style="margin-top:8px;margin-bottom:0;"></div>
-      </div>
-
-      <div class="switch-row">
-        <div>
-          <div style="font-weight:700;margin-bottom:4px;">تحدي المؤقت</div>
-          <div style="color:var(--muted);font-size:13px;">عرض العد التنازلي من 30 ثانية لكل سؤال.</div>
-        </div>
-        <label style="display:flex;align-items:center;gap:8px;font-weight:700;">
-          <input id="useTimer" type="checkbox" checked />
-          تشغيل
-        </label>
-      </div>
-
-      <div class="meta-grid">
-        <div class="meta-box">
-          <span>إجمالي الشرائح</span>
-          <strong id="totalSlidesValue">0</strong>
-        </div>
-        <div class="meta-box">
-          <span>مدة السؤال</span>
-          <strong>30 ثانية</strong>
-        </div>
-      </div>
-
-      <button class="btn btn-primary" id="startBtn">ابدأ الاختبار الآن</button>
-    </section>
-
-    <section class="main-grid" id="mainGrid">
-      <div>
-        <div class="card">
-          <div class="card-header">
-            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;">
-              <div>
-                <h2 class="section-title" style="margin:0 0 6px;">لوحة المتابعة</h2>
-                <p class="section-sub">متابعة التقدم والزمن وحالة المؤقت.</p>
-              </div>
-              <div class="timer-badge" id="sideTimerBadge">30s</div>
-            </div>
-
-            <div class="progress-wrap">
-              <div class="progress">
-                <div class="progress-bar" id="progressBar"></div>
-              </div>
-              <div class="progress-row">
-                <span id="progressText">السؤال 1 / 1</span>
-                <span id="progressPercent">0% مكتمل</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="card-body">
-            <div class="stats">
-              <div class="stat">
-                <span>تمت الإجابة</span>
-                <strong id="answeredCount">0</strong>
-              </div>
-              <div class="stat">
-                <span>متوسط الزمن</span>
-                <strong id="avgTime">0s</strong>
-              </div>
-              <div class="stat">
-                <span>انتهى المؤقت</span>
-                <strong id="timedOutCount">0</strong>
-              </div>
-              <div class="stat">
-                <span>النمط</span>
-                <strong id="modeValue">Timed</strong>
-              </div>
-            </div>
-
-            <div class="tip" id="tipBox">
-              اكتب إجابتك ثم اعرض الإجابة النموذجية للمقارنة.
-            </div>
-
-            <div style="margin-top:16px;">
-              <button class="btn btn-outline" style="width:100%;" id="resetBtn">إنهاء الاختبار والعودة للإعدادات</button>
-            </div>
+def render_start_screen() -> None:
+    total_available = len(SLIDES_DATA)
+    render_top_hero()
+
+    num_questions = st.number_input(
+        "Number of slides",
+        min_value=1,
+        max_value=total_available,
+        value=min(int(st.session_state.num_questions), total_available),
+        step=1,
+    )
+    use_timer = st.checkbox("Enable live 30-second timer", value=True)
+
+    st.session_state.num_questions = int(num_questions)
+
+    st.markdown("<div style='height: 0.25rem;'></div>", unsafe_allow_html=True)
+    if st.button("Start quiz", type="primary", use_container_width=True):
+        start_quiz(int(num_questions), use_timer)
+        st.rerun()
+
+
+def render_image(slide_name: str) -> None:
+    slide_path = IMAGE_DIR / slide_name
+    if slide_path.exists():
+        st.image(str(slide_path), use_container_width=True)
+        return
+
+    st.markdown(
+        f"""
+        <div class="panel-shell">
+          <div class="section-title">Image not found</div>
+          <div class="section-caption">
+            Could not locate <code>{html.escape(slide_name)}</code> inside
+            <code>{html.escape(str(IMAGE_DIR))}</code>.
           </div>
         </div>
-      </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-      <div id="contentArea"></div>
-    </section>
-  </div>
 
-  <script>
-    const ALL_SLIDES = __SLIDES_JSON__;
-    const TIMER_SECONDS = 30;
+def render_question_screen() -> None:
+    total_q = len(st.session_state.selected_slides)
+    current_q = st.session_state.current_q_index
 
-    let selectedSlides = [];
-    let currentIndex = 0;
-    let results = [];
-    let answerStartTime = null;
-    let countdownInterval = null;
-    let timeLeft = TIMER_SECONDS;
-    let quizState = "setup";
+    if current_q >= total_q:
+        st.balloons()
+        st.markdown(
+            """
+            <div class="hero-shell">
+              <div class="hero-kicker">Completed</div>
+              <div class="hero-title">You finished the quiz.</div>
+              <div class="hero-subtitle">
+                Excellent work. You reached the end of the selected slides, and your focus held up until the last question.
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Start another round", type="primary", use_container_width=True):
+            reset_quiz()
+            st.rerun()
+        return
 
-    const questionCountInput = document.getElementById("questionCount");
-    const useTimerInput = document.getElementById("useTimer");
-    const startBtn = document.getElementById("startBtn");
-    const resetBtn = document.getElementById("resetBtn");
-    const mainGrid = document.getElementById("mainGrid");
-    const contentArea = document.getElementById("contentArea");
+    progress_value = (current_q + (1 if st.session_state.show_answer else 0)) / max(total_q, 1)
+    st.progress(progress_value)
+    st.caption(f"Question {current_q + 1} of {total_q}")
 
-    const totalSlidesValue = document.getElementById("totalSlidesValue");
-    const maxSlidesText = document.getElementById("maxSlidesText");
-    const progressBar = document.getElementById("progressBar");
-    const progressText = document.getElementById("progressText");
-    const progressPercent = document.getElementById("progressPercent");
-    const answeredCount = document.getElementById("answeredCount");
-    const avgTime = document.getElementById("avgTime");
-    const timedOutCount = document.getElementById("timedOutCount");
-    const modeValue = document.getElementById("modeValue");
-    const sideTimerBadge = document.getElementById("sideTimerBadge");
-    const tipBox = document.getElementById("tipBox");
+    current_slide = st.session_state.selected_slides[current_q]
+    slide_data = SLIDES_DATA[current_slide]
+    question_text = slide_data["q"]
+    correct_answer = slide_data["a"]
 
-    totalSlidesValue.textContent = ALL_SLIDES.length;
-    maxSlidesText.textContent = "الحد الأقصى " + ALL_SLIDES.length + " شريحة.";
-
-    function getQuestionCount() {
-      let count = parseInt(questionCountInput.value || "1", 10);
-      if (isNaN(count)) count = 1;
-      if (count < 1) count = 1;
-      if (count > ALL_SLIDES.length) count = ALL_SLIDES.length;
-      questionCountInput.value = count;
-      return count;
-    }
-
-    function startQuiz() {
-      const count = getQuestionCount();
-      selectedSlides = ALL_SLIDES.slice(0, count);
-      currentIndex = 0;
-      results = [];
-      quizState = "question";
-      mainGrid.style.display = "grid";
-      startQuestion();
-      updateSidebar();
-    }
-
-    function startQuestion() {
-      clearTimer();
-      quizState = "question";
-      timeLeft = TIMER_SECONDS;
-      answerStartTime = Date.now();
-      renderQuestion();
-      updateSidebar();
-
-      if (useTimerInput.checked) {
-        startTimer();
-      } else {
-        sideTimerBadge.textContent = "No timer";
-        sideTimerBadge.className = "timer-badge";
-      }
-    }
-
-    function startTimer() {
-      updateTimerUI();
-
-      countdownInterval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - answerStartTime) / 1000);
-        timeLeft = Math.max(TIMER_SECONDS - elapsed, 0);
-        updateTimerUI();
-
-        if (timeLeft <= 0) {
-          clearTimer();
-          revealAnswer(true);
-        }
-      }, 250);
-    }
-
-    function clearTimer() {
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-        countdownInterval = null;
-      }
-    }
-
-    function updateTimerUI() {
-      const timerBox = document.getElementById("countdownValue");
-      sideTimerBadge.className = "timer-badge";
-
-      if (timeLeft <= 5) {
-        sideTimerBadge.classList.add("danger-timer");
-      } else if (timeLeft <= 10) {
-        sideTimerBadge.classList.add("warning-timer");
-      }
-
-      sideTimerBadge.textContent = useTimerInput.checked ? (timeLeft + "s") : "No timer";
-
-      if (timerBox) {
-        const holder = timerBox.parentElement;
-        holder.className = "countdown-box";
-        if (timeLeft <= 5) {
-          holder.classList.add("danger-timer");
-        } else if (timeLeft <= 10) {
-          holder.classList.add("warning-timer");
-        }
-        timerBox.textContent = timeLeft;
-      }
-    }
-
-    function revealAnswer(timerExpired = false) {
-      if (quizState !== "question") return;
-
-      clearTimer();
-      const textarea = document.getElementById("userAnswer");
-      const userAnswer = textarea ? textarea.value.trim() : "";
-      const elapsed = Math.max(0, Math.ceil((Date.now() - answerStartTime) / 1000));
-
-      const slide = selectedSlides[currentIndex];
-      results.push({
-        slideId: slide.id,
-        userAnswer,
-        timeTakenSeconds: elapsed,
-        timerExpired
-      });
-
-      quizState = "answer";
-      renderAnswer(slide, results[results.length - 1]);
-      updateSidebar();
-    }
-
-    function nextQuestion() {
-      currentIndex += 1;
-      if (currentIndex >= selectedSlides.length) {
-        quizState = "complete";
-        renderComplete();
-        updateSidebar();
-        return;
-      }
-      startQuestion();
-    }
-
-    function resetQuiz() {
-      clearTimer();
-      selectedSlides = [];
-      currentIndex = 0;
-      results = [];
-      answerStartTime = null;
-      timeLeft = TIMER_SECONDS;
-      quizState = "setup";
-      mainGrid.style.display = "none";
-      contentArea.innerHTML = "";
-      updateSidebar();
-    }
-
-    function updateSidebar() {
-      const total = selectedSlides.length || 1;
-      const answered = results.length;
-      const percent = selectedSlides.length ? Math.round((answered / selectedSlides.length) * 100) : 0;
-      const average = answered ? Math.round(results.reduce((sum, item) => sum + item.timeTakenSeconds, 0) / answered) : 0;
-      const timedOut = results.filter(item => item.timerExpired).length;
-
-      answeredCount.textContent = answered;
-      avgTime.textContent = average + "s";
-      timedOutCount.textContent = timedOut;
-      modeValue.textContent = useTimerInput.checked ? "Timed" : "Practice";
-      progressBar.style.width = percent + "%";
-      progressText.textContent = "السؤال " + Math.min(currentIndex + 1, total) + " / " + total;
-      progressPercent.textContent = percent + "% مكتمل";
-
-      if (quizState === "complete") {
-        tipBox.innerHTML = "تم إنهاء جميع الشرائح المحددة بنجاح.";
-        tipBox.className = "success-note";
-      } else {
-        tipBox.innerHTML = "اكتب إجابتك ثم اعرض الإجابة النموذجية للمقارنة.";
-        tipBox.className = "tip";
-      }
-
-      if (!useTimerInput.checked) {
-        sideTimerBadge.textContent = "No timer";
-        sideTimerBadge.className = "timer-badge";
-      }
-    }
-
-    function imageHtml(slide) {
-      if (slide.image) {
-        return '<img src="' + slide.image + '" alt="' + escapeHtml(slide.question) + '">';
-      }
-      return `
-        <div class="image-fallback">
-          <h3 style="margin:0 0 8px;color:#111827">الصورة غير متاحة حالياً</h3>
-          <div>ضع الصور في ${escapeHtml("__FOLDER_NAME__")} أو static/${escapeHtml("__FOLDER_NAME__")} بنفس الأسماء الحالية.</div>
+    st.markdown(
+        f"""
+        <div class="question-shell">
+          <span class="question-label">Question</span>
+          <div class="question-text">{html.escape(question_text)}</div>
         </div>
-      `;
-    }
+        """,
+        unsafe_allow_html=True,
+    )
 
-    function renderQuestion() {
-      const slide = selectedSlides[currentIndex];
+    render_image(current_slide)
 
-      contentArea.innerHTML = `
-        <div class="card">
-          <div class="card-header">
-            <div class="question-head">
-              <div>
-                <h2 class="section-title" style="margin:0 0 6px;">Slide ${currentIndex + 1}</h2>
-                <p class="section-sub">${slide.id}</p>
-              </div>
-              <div class="pill">Forensic identification challenge</div>
+    if not st.session_state.show_answer:
+        if st.session_state.use_timer:
+            render_timer_widget(st.session_state.q_start_time, TIMER_SECONDS)
+
+        with st.form(key=f"answer_form_{current_q}", clear_on_submit=False):
+            user_input = st.text_area(
+                "Your answer",
+                height=120,
+                placeholder="Type your answer here...",
+                key=f"answer_input_{current_q}",
+                label_visibility="collapsed",
+            )
+            submit = st.form_submit_button("Show answer", type="primary", use_container_width=True)
+
+        if submit:
+            st.session_state.stored_user_answer = user_input
+            st.session_state.time_taken = time.time() - st.session_state.q_start_time
+            st.session_state.show_answer = True
+            st.rerun()
+    else:
+        user_text = st.session_state.stored_user_answer.strip() or "No answer provided."
+        safe_user_text = html.escape(user_text)
+        safe_correct = html.escape(correct_answer)
+        st.markdown(
+            f"""
+            <div class="panel-shell">
+              <div class="section-title">Review</div>
+              <div class="section-caption">Compare your answer with the model answer below.</div>
             </div>
-
-            <div class="question-box">
-              <small>Question</small>
-              <p>${escapeHtml(slide.question)}</p>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"""
+            <div class="user-shell">
+              <span class="question-label">Your answer</span>
+              <div class="user-text">{safe_user_text}</div>
             </div>
-          </div>
-
-          <div class="card-body">
-            <div class="image-box">
-              ${imageHtml(slide)}
+            """,
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"""
+            <div class="answer-shell">
+              <span class="answer-label">Model answer</span>
+              <div class="answer-text">{safe_correct}</div>
             </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-            <div class="answer-tools">
-              <div>
-                <div class="question-box" style="margin-top:0;">
-                  <small>Write your answer</small>
-                  <p style="margin-top:10px;font-size:14px;color:var(--muted);">اكتب إجابتك هنا ثم قارنها بالإجابة النموذجية.</p>
-                </div>
-              </div>
+        elapsed = int(round(st.session_state.time_taken))
+        if st.session_state.use_timer:
+            if elapsed <= TIMER_SECONDS:
+                st.markdown(
+                    f"<div class='time-result-safe'>Time used: {elapsed} seconds out of {TIMER_SECONDS}.</div>",
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    f"<div class='time-result-warning'>Time used: {elapsed} seconds, which is over the 30-second target.</div>",
+                    unsafe_allow_html=True,
+                )
 
-              ${
-                useTimerInput.checked
-                  ? `<div class="countdown-box"><small>Countdown</small><strong id="countdownValue">${timeLeft}</strong></div>`
-                  : ``
-              }
-            </div>
+        next_col, reset_col = st.columns(2)
+        with next_col:
+            if st.button("Next slide", type="primary", use_container_width=True):
+                st.session_state.current_q_index += 1
+                st.session_state.show_answer = False
+                st.session_state.stored_user_answer = ""
+                st.session_state.q_start_time = time.time()
+                st.rerun()
+        with reset_col:
+            if st.button("End quiz", use_container_width=True):
+                reset_quiz()
+                st.rerun()
 
-            <div style="margin-top:16px;">
-              <textarea id="userAnswer" placeholder="Write your answer here..."></textarea>
-            </div>
 
-            <div class="actions">
-              <button class="btn btn-primary" style="width:auto;" onclick="revealAnswer(false)">إظهار الإجابة</button>
-            </div>
-          </div>
-        </div>
-      `;
+init_state()
 
-      updateTimerUI();
-    }
-
-    function renderAnswer(slide, result) {
-      contentArea.innerHTML = `
-        <div class="card">
-          <div class="card-header">
-            <div class="question-head">
-              <div>
-                <h2 class="section-title" style="margin:0 0 6px;">Slide ${currentIndex + 1}</h2>
-                <p class="section-sub">${slide.id}</p>
-              </div>
-              <div class="pill">Answer review</div>
-            </div>
-
-            <div class="question-box">
-              <small>Question</small>
-              <p>${escapeHtml(slide.question)}</p>
-            </div>
-          </div>
-
-          <div class="card-body">
-            <div class="image-box">
-              ${imageHtml(slide)}
-            </div>
-
-            <div class="answer-grid">
-              <div class="answer-card ${result.userAnswer ? '' : 'muted'}">
-                <h4>إجابتك</h4>
-                <p>${result.userAnswer ? escapeHtml(result.userAnswer).replace(/\\n/g, "<br>") : "لم يتم إدخال إجابة."}</p>
-              </div>
-
-              <div class="answer-card">
-                <h4>الإجابة النموذجية</h4>
-                <p>${escapeHtml(slide.answer)}</p>
-              </div>
-            </div>
-
-            <div class="status-row">
-              <div class="status ${result.timerExpired ? 'danger' : 'success'}">
-                ${result.timerExpired ? 'انتهى الوقت قبل إظهار الإجابة' : 'تم عرض الإجابة في الوقت المناسب'}
-              </div>
-              <div class="status">
-                الزمن المستغرق ${result.timeTakenSeconds} ثانية
-              </div>
-            </div>
-
-            <div class="actions">
-              <button class="btn btn-primary" style="width:auto;" onclick="nextQuestion()">
-                ${currentIndex + 1 >= selectedSlides.length ? 'إنهاء الجلسة' : 'السؤال التالي'}
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    function renderComplete() {
-      const average = results.length ? Math.round(results.reduce((sum, item) => sum + item.timeTakenSeconds, 0) / results.length) : 0;
-      const timedOut = results.filter(item => item.timerExpired).length;
-
-      contentArea.innerHTML = `
-        <div class="card">
-          <div class="card-header">
-            <h2 class="section-title" style="margin:0 0 8px;">Session complete</h2>
-            <p class="section-sub">تم إنهاء الجلسة.</p>
-          </div>
-
-          <div class="card-body">
-            <div class="summary">
-              <div class="summary-box">
-                <span>الشرائح</span>
-                <strong>${selectedSlides.length}</strong>
-              </div>
-              <div class="summary-box">
-                <span>متوسط الزمن</span>
-                <strong>${average}s</strong>
-              </div>
-              <div class="summary-box">
-                <span>انتهاء المؤقت</span>
-                <strong>${timedOut}</strong>
-              </div>
-            </div>
-
-            <div class="success-note" style="margin-top:18px;">
-              يمكنك بدء اختبار جديد متى شئت.
-            </div>
-
-            <div class="actions" style="margin-top:18px;">
-              <button class="btn btn-primary" style="width:auto;" onclick="resetQuiz()">ابدأ اختبار جديد</button>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement("div");
-      div.textContent = text || "";
-      return div.innerHTML;
-    }
-
-    startBtn.addEventListener("click", startQuiz);
-    resetBtn.addEventListener("click", resetQuiz);
-    window.revealAnswer = revealAnswer;
-    window.nextQuestion = nextQuestion;
-    window.resetQuiz = resetQuiz;
-  </script>
-</body>
-</html>
-"""
-
-html_with_data = HTML.replace("__SLIDES_JSON__", slides_json).replace("__FOLDER_NAME__", FOLDER_NAME)
-
-components.html(html_with_data, height=2400, scrolling=True)
+if not st.session_state.quiz_started:
+    render_start_screen()
+else:
+    render_question_screen()
