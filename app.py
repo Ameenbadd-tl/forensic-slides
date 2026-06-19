@@ -11,90 +11,109 @@ st.set_page_config(page_title="Forensic Slides Quiz", page_icon="🔬", layout="
 
 st.markdown("""
     <style>
-    /* تنسيق العناوين */
     .title-en { text-align: center; color: #1E3A8A; font-size: 2.2em; font-weight: bold; margin-bottom: 5px; font-family: 'Arial', sans-serif;}
     .title-ar { text-align: center; color: #B91C1C; font-size: 1.8em; font-weight: bold; margin-top: 0px; margin-bottom: 25px; font-family: 'Tajawal', sans-serif;}
     
-    /* تنسيق بطاقة الإجابة */
-    .answer-card { 
-        background-color: #F0FDF4; 
-        border-right: 6px solid #16A34A; /* خط أخضر على اليمين */
-        padding: 20px; 
-        border-radius: 10px; 
-        color: #14532D; 
-        font-size: 1.3em; 
-        font-weight: bold; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        text-align: left;
+    .question-box {
+        background-color: #EFF6FF;
+        border-left: 6px solid #3B82F6;
+        padding: 15px;
+        border-radius: 8px;
+        color: #1E3A8A;
+        font-size: 1.2em;
+        margin-bottom: 15px;
         direction: ltr;
-        margin-top: 20px;
-        margin-bottom: 20px;
+        text-align: left;
     }
     
-    /* تنسيق رسائل الوقت */
+    .user-answer-card {
+        background-color: #F3F4F6;
+        border-left: 6px solid #6B7280;
+        padding: 15px;
+        border-radius: 8px;
+        color: #374151;
+        font-size: 1.1em;
+        margin-bottom: 10px;
+        direction: ltr;
+        text-align: left;
+    }
+
+    .answer-card { 
+        background-color: #F0FDF4; 
+        border-left: 6px solid #16A34A; 
+        padding: 15px; 
+        border-radius: 8px; 
+        color: #14532D; 
+        font-size: 1.2em; 
+        font-weight: bold; 
+        margin-bottom: 20px;
+        direction: ltr;
+        text-align: left;
+    }
+    
     .time-success { color: #16A34A; font-weight: bold; font-size: 1.1em; text-align: center;}
     .time-warning { color: #DC2626; font-weight: bold; font-size: 1.1em; text-align: center;}
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 1. البيانات (الصور والإجابات)
+# 1. البيانات (الصور، الأسئلة، والإجابات)
 # ==========================================
 SLIDES_DATA = {
-    "img35.jpg": "Extensive bruises/ contusions cause by blunt truma",
-    "img36.jpg": "cut fracture done by a sharp heavy instrument",
-    "img37.jpg": "spleen laceration cause blunt trauma",
-    "img45.jpg": "skin split of scalp casue exposure to extreme heat",
-    "img46.jpg": "froth secretion from mouth & nostrils D.D 1 putrefaction foul smell + continent blood 2- drowing",
-    "img47.jpg": "Aortic transaction between arch of aorta and descending due to steering wheel injury RTA",
-    "img50.jpg": "Sever lacerated wound in liver due to sever blunt truma",
-    "img51.jpg": "Depressed comminated fracture due to heavy blunt truma Wide surface area & high momentum",
-    "img52.jpg": "Sternum MLI : Less than 40y b/c xiphoid cartilage and body not united and body and manubrium on 60y",
-    "img60.jpg": "Gutter fracture due to bullet left inlet & right ex",
-    "img61.jpg": "Firing bullet there is rifling marks",
-    "img62.jpg": "Trench foot due to long immersion in cold water",
-    "img72.jpg": "Racon eye & spectacle hem due to fracture of base of skull anterior cranial fossa c/p : rhinorrhea",
-    "img73.jpg": "Animal hair – thick medulla & thin cortex",
-    "img74.jpg": "Lacerated wound in kidney due to blunt trauma.",
-    "img82.jpg": "Vault of skull Open anterior fontanelle indicating an age less than 1.5y",
-    "img83.jpg": "Left pointer : contact pallor mech : compression in blod vessles",
-    "img84.jpg": "Postmortem hypostasis (livor mortis mech : cessation of the circulation and relaxation of muscle tone leading gravitation",
-    "img89.jpg": "Contact pallor indicating prone position at death.",
-    "img90.jpg": "Skeletonization (indicated: more 6 months + less 1 year )",
-    "img91.jpg": "Extradural (epidural) hemorrhage caused by trauma",
-    "img96.jpg": "Hinge fracture , Cause: fall on the buttocks",
-    "img97.jpg": "Boxer (Pugilistic) attitude. Cause: exposure to extreme heat. Mechanism: coagulation and contraction of muscle proteins",
-    "img98.jpg": "right is Male skull. 2 Features: prominent supraorbital ridges, angular frontonasal junction left is Female skull. 2 Features: less prominent supraorbital ridges, smotth frontonasal junction",
-    "img101.jpg": "Maceration. aseptic autolytic changes that occur in a fetus that died in utero",
-    "img102.jpg": "Bulla (blister). Causes: putrefaction content gas material burns content albumin protein",
-    "img103.jpg": "Cut defense wound",
-    "img106.jpg": "Cadaveric spasm. Occurs in situations of extreme nervous tension such as suicide",
-    "img107.jpg": "Petechial hemorrhages on the heart surface caused by asphyxia",
-    "img108.jpg": "Whiplash injury. caused by hyperflexion and hyperextension of the neck",
-    "img111.jpg": "suffocation by a plastic bag cause death asphyxia + or reflex carotid sinus cardiac arrest",
-    "img112.jpg": "Close firearm injury. MLI: 1. Distance of firearm discharge. 2. Print of muzzle. 3. Type of weapon",
-    "img113.jpg": "Lacerated wound of the scalp due to blunt trauma",
-    "img116.jpg": "Scald burn. ( moist burn) Sharp demarcation edge .2. Reddening of the skin",
-    "img117.jpg": "Rope burns (brush abrasion / ligature mark of hanging).",
-    "img118.jpg": "Impaction of food in the oropharyngeal (Café Coronary). + choking death : asphyxia or cardiac arrest",
-    "img119.jpg": "Petechial hemorrhages on the eyelid and Conjunctival in a case of manual strangulation or sneezing",
-    "img122.jpg": "Scalp avulsion of left face (flaying injury) due to a rotating wheel.",
-    "img123.jpg": "1- Incomplete hanging 2-arrow pointed to marbling phenonmen indicated time since of death is 48h in summer and 1 week un winter",
-    "img124.jpg": "Suspension point of hanging at the occipital region",
-    "img127.jpg": "Double running noose (Knot)",
-    "img128.jpg": "Brain absess in cerebral hemospher",
-    "img129.jpg": "Right side normal hyoid bone Left side : fracture of greater coroner of hyoid bone common in manual strangulation",
-    "img132.jpg": "Soot particles in trachea indicate antemortem burn death",
-    "img133.jpg": "Battles sign cause fracture of base of skull in middle cranial fossa otorrhea",
-    "img134.jpg": "Gagging cause of death asphyxia",
-    "img137.jpg": "smokeless powder content nitroglycerine or nitrocellulose one volume prodused 900 volumes of gases",
-    "img138.jpg": "Keloid scars from extensive burns",
-    "img139.jpg": "Suicidal hanging with dog lead , the mark rising to suspension point front the neck",
-    "img142.jpg": "large extradural hemorrhage",
-    "img143.jpg": "Ring fracture cause : falling from height on feet or boxer",
-    "img144.jpg": "blue arrow Contact pallor due to compression of blood vessels red arrow : hypostasis chery red color due to CO posion or cynaid po or cold",
-    "img147.jpg": "Typical railway-line' bruises caused by a wooden rod.",
-    "img148.jpg": "Human hair – Absent medulla & thick cortex"
+    "img35.jpg": {"q": "Identify the type of injury and its cause.", "a": "Extensive bruises/ contusions cause by blunt truma"},
+    "img36.jpg": {"q": "Identify the type of fracture and the instrument used.", "a": "cut fracture done by a sharp heavy instrument"},
+    "img37.jpg": {"q": "Identify the organ injury and its cause.", "a": "spleen laceration cause blunt trauma"},
+    "img45.jpg": {"q": "Identify the scalp injury and its cause.", "a": "skin split of scalp casue exposure to extreme heat"},
+    "img46.jpg": {"q": "What is the finding, and what is the differential diagnosis (D.D)?", "a": "froth secretion from mouth & nostrils D.D 1 putrefaction foul smell + continent blood 2- drowing"},
+    "img47.jpg": {"q": "Identify the vascular injury and its cause.", "a": "Aortic transaction between arch of aorta and descending due to steering wheel injury RTA"},
+    "img50.jpg": {"q": "Identify the organ injury and its cause.", "a": "Sever lacerated wound in liver due to sever blunt truma"},
+    "img51.jpg": {"q": "Identify the type of fracture and its cause.", "a": "Depressed comminated fracture due to heavy blunt truma Wide surface area & high momentum"},
+    "img52.jpg": {"q": "What is the age estimation (MLI) from this sternum and why?", "a": "Sternum MLI : Less than 40y b/c xiphoid cartilage and body not united and body and manubrium on 60y"},
+    "img60.jpg": {"q": "Identify the type of skull fracture and specify the inlet/outlet.", "a": "Gutter fracture due to bullet left inlet & right ex"},
+    "img61.jpg": {"q": "What is the specific mark seen on this fired bullet?", "a": "Firing bullet there is rifling marks"},
+    "img62.jpg": {"q": "Identify the condition and its cause.", "a": "Trench foot due to long immersion in cold water"},
+    "img72.jpg": {"q": "Identify the signs, the underlying fracture, and the clinical presentation (C/P).", "a": "Racon eye & spectacle hem due to fracture of base of skull anterior cranial fossa c/p : rhinorrhea"},
+    "img73.jpg": {"q": "Identify the type of hair and describe its medulla and cortex.", "a": "Animal hair – thick medulla & thin cortex"},
+    "img74.jpg": {"q": "Identify the organ injury and its cause.", "a": "Lacerated wound in kidney due to blunt trauma."},
+    "img82.jpg": {"q": "Estimate the age from this skull vault and state the reason.", "a": "Vault of skull Open anterior fontanelle indicating an age less than 1.5y"},
+    "img83.jpg": {"q": "Identify the sign pointed by the left pointer and its mechanism.", "a": "Left pointer : contact pallor mech : compression in blod vessles"},
+    "img84.jpg": {"q": "Identify the postmortem change and its mechanism.", "a": "Postmortem hypostasis (livor mortis mech : cessation of the circulation and relaxation of muscle tone leading gravitation"},
+    "img89.jpg": {"q": "What does the contact pallor indicate in this case?", "a": "Contact pallor indicating prone position at death."},
+    "img90.jpg": {"q": "Identify the postmortem change and estimate the time since death.", "a": "Skeletonization (indicated: more 6 months + less 1 year )"},
+    "img91.jpg": {"q": "Identify the type of hemorrhage and its cause.", "a": "Extradural (epidural) hemorrhage caused by trauma"},
+    "img96.jpg": {"q": "Identify the type of fracture and its cause.", "a": "Hinge fracture , Cause: fall on the buttocks"},
+    "img97.jpg": {"q": "Identify the attitude, its cause, and the mechanism.", "a": "Boxer (Pugilistic) attitude. Cause: exposure to extreme heat. Mechanism: coagulation and contraction of muscle proteins"},
+    "img98.jpg": {"q": "Determine the sex of the right and left skulls. Mention 2 features for each.", "a": "right is Male skull. 2 Features: prominent supraorbital ridges, angular frontonasal junction left is Female skull. 2 Features: less prominent supraorbital ridges, smotth frontonasal junction"},
+    "img101.jpg": {"q": "Identify the postmortem change and its definition.", "a": "Maceration. aseptic autolytic changes that occur in a fetus that died in utero"},
+    "img102.jpg": {"q": "Identify the skin lesion and mention its causes.", "a": "Bulla (blister). Causes: putrefaction content gas material burns content albumin protein"},
+    "img103.jpg": {"q": "Identify the type of wound.", "a": "Cut defense wound"},
+    "img106.jpg": {"q": "Identify the condition and mention when it occurs.", "a": "Cadaveric spasm. Occurs in situations of extreme nervous tension such as suicide"},
+    "img107.jpg": {"q": "Identify the finding on the heart surface and its cause.", "a": "Petechial hemorrhages on the heart surface caused by asphyxia"},
+    "img108.jpg": {"q": "Identify the injury and its cause.", "a": "Whiplash injury. caused by hyperflexion and hyperextension of the neck"},
+    "img111.jpg": {"q": "Identify the condition and the mechanisms of death.", "a": "suffocation by a plastic bag cause death asphyxia + or reflex carotid sinus cardiac arrest"},
+    "img112.jpg": {"q": "Identify the type of injury and mention its MLI (3 points).", "a": "Close firearm injury. MLI: 1. Distance of firearm discharge. 2. Print of muzzle. 3. Type of weapon"},
+    "img113.jpg": {"q": "Identify the scalp wound and its cause.", "a": "Lacerated wound of the scalp due to blunt trauma"},
+    "img116.jpg": {"q": "Identify the type of burn and mention 2 characteristics.", "a": "Scald burn. ( moist burn) Sharp demarcation edge .2. Reddening of the skin"},
+    "img117.jpg": {"q": "Identify the type of mark/burn on the neck.", "a": "Rope burns (brush abrasion / ligature mark of hanging)."},
+    "img118.jpg": {"q": "Identify the condition and the cause of death.", "a": "Impaction of food in the oropharyngeal (Café Coronary). + choking death : asphyxia or cardiac arrest"},
+    "img119.jpg": {"q": "Identify the finding and its possible causes.", "a": "Petechial hemorrhages on the eyelid and Conjunctival in a case of manual strangulation or sneezing"},
+    "img122.jpg": {"q": "Identify the scalp injury and its cause.", "a": "Scalp avulsion of left face (flaying injury) due to a rotating wheel."},
+    "img123.jpg": {"q": "1- Identify the type of hanging. 2- Identify the phenomenon pointed by the arrow and its time indication.", "a": "1- Incomplete hanging 2-arrow pointed to marbling phenonmen indicated time since of death is 48h in summer and 1 week un winter"},
+    "img124.jpg": {"q": "Identify the location of the suspension point.", "a": "Suspension point of hanging at the occipital region"},
+    "img127.jpg": {"q": "Identify the type of knot/noose.", "a": "Double running noose (Knot)"},
+    "img128.jpg": {"q": "Identify the brain pathology.", "a": "Brain absess in cerebral hemospher"},
+    "img129.jpg": {"q": "Compare the right and left sides of the hyoid bone and mention the associated condition.", "a": "Right side normal hyoid bone Left side : fracture of greater coroner of hyoid bone common in manual strangulation"},
+    "img132.jpg": {"q": "What do the soot particles in the trachea indicate?", "a": "Soot particles in trachea indicate antemortem burn death"},
+    "img133.jpg": {"q": "Identify the sign, its cause, and the clinical presentation.", "a": "Battles sign cause fracture of base of skull in middle cranial fossa otorrhea"},
+    "img134.jpg": {"q": "Identify the condition and the cause of death.", "a": "Gagging cause of death asphyxia"},
+    "img137.jpg": {"q": "Identify the type of powder, its content, and gas production volume.", "a": "smokeless powder content nitroglycerine or nitrocellulose one volume prodused 900 volumes of gases"},
+    "img138.jpg": {"q": "Identify the type of scars and their cause.", "a": "Keloid scars from extensive burns"},
+    "img139.jpg": {"q": "Identify the condition, the material used, and the mark's direction.", "a": "Suicidal hanging with dog lead , the mark rising to suspension point front the neck"},
+    "img142.jpg": {"q": "Identify the type of hemorrhage.", "a": "large extradural hemorrhage"},
+    "img143.jpg": {"q": "Identify the type of fracture and its cause.", "a": "Ring fracture cause : falling from height on feet or boxer"},
+    "img144.jpg": {"q": "Identify the findings indicated by the blue and red arrows and their causes.", "a": "blue arrow Contact pallor due to compression of blood vessels red arrow : hypostasis chery red color due to CO posion or cynaid po or cold"},
+    "img147.jpg": {"q": "Identify the type of bruises and their cause.", "a": "Typical railway-line' bruises caused by a wooden rod."},
+    "img148.jpg": {"q": "Identify the type of hair and describe its medulla and cortex.", "a": "Human hair – Absent medulla & thick cortex"}
 }
 
 FOLDER_NAME = "forensic-slides"
@@ -116,8 +135,10 @@ if 'q_start_time' not in st.session_state:
     st.session_state.q_start_time = 0.0
 if 'time_taken' not in st.session_state:
     st.session_state.time_taken = 0.0
+if 'stored_user_answer' not in st.session_state:
+    st.session_state.stored_user_answer = ""
 
-# عرض العنوان الثابت في كل الصفحات
+# عرض العنوان الثابت
 st.markdown("<div class='title-en'>🔬 Forensic Medicine Slides Quiz</div>", unsafe_allow_html=True)
 st.markdown("<div class='title-ar'>محاكي اختبار شرائح الطب الشرعي</div>", unsafe_allow_html=True)
 st.markdown("---")
@@ -127,7 +148,7 @@ st.markdown("---")
 # ==========================================
 if not st.session_state.quiz_started:
     
-    st.markdown("### ⚙️ إعدادات المراجعة:")
+    st.markdown("### ⚙️ إعدادات الاختبار:")
     total_available = len(SLIDES_DATA)
     
     col1, col2 = st.columns(2)
@@ -139,22 +160,23 @@ if not st.session_state.quiz_started:
             value=min(10, total_available)
         )
     with col2:
-        st.markdown("<br>", unsafe_allow_html=True) # مسافة فارغة لضبط المحاذاة
+        st.markdown("<br>", unsafe_allow_html=True) 
         st.session_state.use_timer = st.checkbox("⏳ تفعيل تحدي المؤقت (30 ثانية)")
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    if st.button("🚀 ابدأ المراجعة الآن", use_container_width=True):
+    if st.button("🚀 ابدأ الاختبار الآن", use_container_width=True):
         all_slides = list(SLIDES_DATA.keys())
         st.session_state.selected_slides = random.sample(all_slides, num_questions)
         st.session_state.quiz_started = True
         st.session_state.current_q_index = 0
         st.session_state.show_answer = False
-        st.session_state.q_start_time = time.time() # بدء حساب الوقت للسؤال الأول
+        st.session_state.stored_user_answer = ""
+        st.session_state.q_start_time = time.time()
         st.rerun()
 
 # ==========================================
-# 4. واجهة المراجعة (البطاقات)
+# 4. واجهة المراجعة والاختبار
 # ==========================================
 else:
     total_q = len(st.session_state.selected_slides)
@@ -162,63 +184,75 @@ else:
     
     if current_q >= total_q:
         st.balloons()
-        st.success("🎉 لقد أنهيت جميع الشرائح المحددة، أحسنت يا دكتور! جاهز للامتحان إن شاء الله. 🥇")
-            
-        if st.button("🔄 بدء مراجعة جديدة", use_container_width=True):
+        st.success("🎉 لقد أنهيت جميع الشرائح المحددة، أحسنت يا دكتور! 🥇")
+        if st.button("🔄 بدء اختبار جديد", use_container_width=True):
             st.session_state.quiz_started = False
             st.rerun()
             
     else:
         # شريط التقدم
-        progress_val = current_q / total_q
-        st.progress(progress_val)
-        
-        current_slide = st.session_state.selected_slides[current_q]
-        correct_answer = SLIDES_DATA[current_slide]
-        
+        st.progress(current_q / total_q)
         st.markdown(f"**الشريحة {current_q + 1} من {total_q}**")
         
-        # عرض الصورة
+        current_slide = st.session_state.selected_slides[current_q]
+        slide_data = SLIDES_DATA[current_slide]
+        question_text = slide_data["q"]
+        correct_answer = slide_data["a"]
+        
+        # 1. عرض السؤال بالإنجليزي
+        st.markdown(f"<div class='question-box'>❓ <b>Question:</b> {question_text}</div>", unsafe_allow_html=True)
+        
+        # 2. عرض الصورة
         img_path = os.path.join(FOLDER_NAME, current_slide)
         try:
             image = Image.open(img_path)
             st.image(image, use_container_width=True)
         except FileNotFoundError:
-            st.error(f"❌ لم يتم العثور على الصورة: {current_slide}. تأكد من رفعها للمجلد الصحيح.")
+            st.error(f"❌ لم يتم العثور على الصورة: {current_slide}.")
             
-        # منطقة الإجابة والمؤقت
+        # 3. منطقة الإجابة والمؤقت
         if not st.session_state.show_answer:
             if st.session_state.use_timer:
-                st.info("⏳ فكر في التشخيص والميكانيكية بسرعة! لديك 30 ثانية...")
-            else:
-                st.info("🧠 فكر في التشخيص والميكانيكية، ثم تأكد من إجابتك.")
+                st.info("⏳ المؤقت يعمل... اكتب إجابتك بسرعة!")
                 
-            if st.button("👁️ إظهار الإجابة الصحيحة", use_container_width=True):
-                # حساب الوقت المستغرق بمجرد الضغط
+            # مربع إدخال النص
+            user_input = st.text_area("✍️ Write your answer here / اكتب إجابتك هنا:", height=100)
+            
+            if st.button("👁️ تأكيد وإظهار الإجابة الصحيحة", use_container_width=True, type="primary"):
+                st.session_state.stored_user_answer = user_input
                 st.session_state.time_taken = time.time() - st.session_state.q_start_time
                 st.session_state.show_answer = True
                 st.rerun()
+                
+        # 4. منطقة عرض النتيجة والتصحيح
         else:
-            # عرض الإجابة النموذجية في بطاقة احترافية
+            # عرض إجابة الطالب
+            st.markdown("<b>📝 إجابتك (Your Answer):</b>", unsafe_allow_html=True)
+            user_text = st.session_state.stored_user_answer if st.session_state.stored_user_answer.strip() else "لم تكتب شيئاً (No answer provided)"
+            st.markdown(f"<div class='user-answer-card'>{user_text}</div>", unsafe_allow_html=True)
+            
+            # عرض الإجابة النموذجية
+            st.markdown("<b>✅ الإجابة النموذجية (Model Answer):</b>", unsafe_allow_html=True)
             st.markdown(f"<div class='answer-card'>{correct_answer}</div>", unsafe_allow_html=True)
             
             # عرض نتيجة المؤقت إن كان مفعلاً
             if st.session_state.use_timer:
                 t = int(st.session_state.time_taken)
                 if t <= 30:
-                    st.markdown(f"<div class='time-success'>⏱️ رائع! استغرقت {t} ثانية فقط.</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='time-success'>⏱️ استغرقت {t} ثانية.</div>", unsafe_allow_html=True)
                 else:
-                    st.markdown(f"<div class='time-warning'>⚠️ استغرقت {t} ثانية. حاول أن تكون أسرع في الامتحان! (الهدف: 30 ثانية)</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='time-warning'>⚠️ استغرقت {t} ثانية (تجاوزت الـ 30 ثانية).</div>", unsafe_allow_html=True)
             
             st.markdown("<br>", unsafe_allow_html=True)
             
-            if st.button("➡️ الشريحة التالية", use_container_width=True, type="primary"):
+            if st.button("➡️ السؤال التالي (Next Slide)", use_container_width=True, type="primary"):
                 st.session_state.current_q_index += 1
                 st.session_state.show_answer = False
-                st.session_state.q_start_time = time.time() # إعادة ضبط المؤقت للسؤال القادم
+                st.session_state.stored_user_answer = ""
+                st.session_state.q_start_time = time.time()
                 st.rerun()
 
         st.markdown("---")
-        if st.button("🛑 إنهاء أو تغيير الإعدادات"):
+        if st.button("🛑 إنهاء الاختبار والعودة للإعدادات"):
             st.session_state.quiz_started = False
             st.rerun()
