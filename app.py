@@ -49,8 +49,8 @@ SLIDES_DATA = {
     "img116.jpg": {"q": "Identify the type of mark/burn on the neck.", "a": "Rope burns (brush abrasion / ligature mark of hanging)."},
     "img117.jpg": {"q": "Identify the condition and the cause of death.", "a": "Impaction of food in the oropharyngeal (Café Coronary). + choking death : asphyxia or cardiac arrest"},
     "img118.jpg": {
-    "q": "Identify the condition and the cause of death.",
-    "a": "Impaction of food in the oropharyngeal (Cafآ© Coronary). + choking death : asphyxia or cardiac arrest",
+    "q": "Identify the finding and its possible causes.",
+    "a": "Petechial hemorrhages on the eyelid and Conjunctival in a case of manual strangulation or sneezing",
     "images": ["img118.jpg", "img119.jpg"],
 },
     "img122.jpg": {"q": "Identify the scalp injury and its cause.", "a": "Scalp avulsion of left face (flaying injury) due to a rotating wheel."},
