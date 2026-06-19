@@ -5,18 +5,10 @@ import os
 from PIL import Image
 
 # إعدادات الصفحة
-st.set_page_config(page_title="Forensic Slides Quiz 24/25", page_icon="🔬", layout="centered")
+st.set_page_config(page_title="Forensic Slides 24/25", page_icon="🔬", layout="centered")
 
 # ==========================================
-# 1. منطقة إدخال البيانات (قم بتعبئتها أنت)
-# ==========================================
-# ضع اسم الصورة (مع الامتداد) كـ Key، والإجابة الصحيحة كـ Value
-# ==========================================
-# 1. منطقة إدخال البيانات (قم بتعبئتها أنت)
-# ==========================================
-# اكتب اسم الشريحة أو التشخيص بين علامتي التنصيص
-# ==========================================
-# 1. منطقة إدخال البيانات
+# 1. البيانات (الصور والإجابات)
 # ==========================================
 SLIDES_DATA = {
     "img35.jpg": "Extensive bruises/ contusions cause by blunt truma",
@@ -41,7 +33,7 @@ SLIDES_DATA = {
     "img90.jpg": "Skeletonization (indicated: more 6 months + less 1 year )",
     "img91.jpg": "Extradural (epidural) hemorrhage caused by trauma",
     "img96.jpg": "Hinge fracture , Cause: fall on the buttocks",
-    "img97.jpg": "Boxer (Pugilistic) attitude. Cause: exposure to extreme heat. Mechanism: coagulation and contraction of muscle proteins مش نفسها لكن زي ها",
+    "img97.jpg": "Boxer (Pugilistic) attitude. Cause: exposure to extreme heat. Mechanism: coagulation and contraction of muscle proteins",
     "img98.jpg": "right is Male skull. 2 Features: prominent supraorbital ridges, angular frontonasal junction left is Female skull. 2 Features: less prominent supraorbital ridges, smotth frontonasal junction",
     "img101.jpg": "Maceration. aseptic autolytic changes that occur in a fetus that died in utero",
     "img102.jpg": "Bulla (blister). Causes: putrefaction content gas material burns content albumin protein",
@@ -70,7 +62,7 @@ SLIDES_DATA = {
     "img139.jpg": "Suicidal hanging with dog lead , the mark rising to suspension point front the neck",
     "img142.jpg": "large extradural hemorrhage",
     "img143.jpg": "Ring fracture cause : falling from height on feet or boxer",
-    "img144.jpg": "blue arrow Contact pallor due to compression of blood vessels red arrow : hypostasis chery red color due to CO posion or cynaid po or cold ى والح لكن نفس مع تمش نفس صورة بزبط ل",
+    "img144.jpg": "blue arrow Contact pallor due to compression of blood vessels red arrow : hypostasis chery red color due to CO posion or cynaid po or cold",
     "img147.jpg": "Typical railway-line' bruises caused by a wooden rod.",
     "img148.jpg": "Human hair – Absent medulla & thick cortex"
 }
@@ -78,100 +70,58 @@ SLIDES_DATA = {
 FOLDER_NAME = "forensic-slides"
 
 # ==========================================
-# 2. تهيئة المتغيرات (Session State)
+# 2. تهيئة المتغيرات
 # ==========================================
 if 'quiz_started' not in st.session_state:
     st.session_state.quiz_started = False
 if 'current_q_index' not in st.session_state:
     st.session_state.current_q_index = 0
-if 'score' not in st.session_state:
-    st.session_state.score = 0
 if 'selected_slides' not in st.session_state:
     st.session_state.selected_slides = []
-if 'q_start_time' not in st.session_state:
-    st.session_state.q_start_time = 0
-if 'feedback' not in st.session_state:
-    st.session_state.feedback = ""
+if 'show_answer' not in st.session_state:
+    st.session_state.show_answer = False
 
 # ==========================================
 # 3. واجهة البداية (الإعدادات)
 # ==========================================
 if not st.session_state.quiz_started:
-    st.title("🔬 محاكي امتحان شرائح الطب الشرعي - دفعة 24/25")
-    st.write("أهلاً بك! اختبر نفسك في شرائح العملي للفرونسك.")
+    st.title("🔬 مراجعة شرائح الطب الشرعي - دفعة 24/25")
+    st.write("اختبر معلوماتك وتأكد من التشخيص والميكانيكية.")
     
     total_available = len(SLIDES_DATA)
     
-    if total_available == 0:
-        st.warning("⚠️ الرجاء إضافة أسماء الصور والإجابات في كود بايثون أولاً.")
-    else:
-        # اختيار عدد الأسئلة
-        num_questions = st.number_input(
-            f"كم عدد الشرائح التي تريد اختبار نفسك بها؟ (الحد الأقصى {total_available})", 
-            min_value=1, 
-            max_value=total_available, 
-            value=min(10, total_available) # الافتراضي 10 كما طلبت
-        )
-        
-        # اختيار نوع الاختبار
-        test_mode = st.radio(
-            "اختر نظام الاختبار:",
-            ("اختبار عادي (بدون وقت)", "اختبار بمؤقت (30 ثانية لكل شريحة)")
-        )
-        
-        # زر البدء
-        if st.button("🚀 ابدأ الاختبار"):
-            # اختيار شرائح عشوائية بناء على العدد المطلوب
-            all_slides = list(SLIDES_DATA.keys())
-            st.session_state.selected_slides = random.sample(all_slides, num_questions)
-            
-            st.session_state.is_timed = "بمؤقت" in test_mode
-            st.session_state.quiz_started = True
-            st.session_state.current_q_index = 0
-            st.session_state.score = 0
-            st.session_state.feedback = ""
-            st.session_state.q_start_time = time.time()
-            st.rerun()
+    num_questions = st.number_input(
+        f"كم شريحة تريد في هذه الجلسة؟ (الإجمالي {total_available})", 
+        min_value=1, 
+        max_value=total_available, 
+        value=min(10, total_available)
+    )
+    
+    if st.button("🚀 ابدأ المراجعة"):
+        all_slides = list(SLIDES_DATA.keys())
+        st.session_state.selected_slides = random.sample(all_slides, num_questions)
+        st.session_state.quiz_started = True
+        st.session_state.current_q_index = 0
+        st.session_state.show_answer = False
+        st.rerun()
 
 # ==========================================
-# 4. واجهة الاختبار
+# 4. واجهة المراجعة (البطاقات)
 # ==========================================
 else:
-    # إذا انتهى الاختبار
     if st.session_state.current_q_index >= len(st.session_state.selected_slides):
-        st.title("🎉 انتهى الاختبار!")
-        st.subheader(f"نتيجتك النهائية: {st.session_state.score} من {len(st.session_state.selected_slides)}")
-        
-        # رسالة تشجيعية
-        percentage = (st.session_state.score / len(st.session_state.selected_slides)) * 100
-        if percentage == 100:
-            st.success("ممتاز! أنت جاهز تماماً لامتحان الفرونسك، دكتور! 🥇")
-        elif percentage >= 70:
-            st.info("نتيجة جيدة جداً، راجع أخطائك البسيطة وستكون بأمان. 👍")
-        else:
-            st.warning("تحتاج إلى المزيد من المراجعة للشرائح، لا تستسلم! 💪")
+        st.title("🎉 انتهت المراجعة!")
+        st.success("لقد أنهيت جميع الشرائح المحددة، أحسنت يا دكتور! 🥇")
             
-        if st.button("🔄 إعادة الاختبار"):
+        if st.button("🔄 مراجعة شرائح أخرى"):
             st.session_state.quiz_started = False
             st.rerun()
             
-    # إذا كان الاختبار مستمراً
     else:
         current_slide = st.session_state.selected_slides[st.session_state.current_q_index]
         correct_answer = SLIDES_DATA[current_slide]
         
-        # عرض معلومات السؤال
         st.markdown(f"### الشريحة {st.session_state.current_q_index + 1} من {len(st.session_state.selected_slides)}")
-        
-        if st.session_state.is_timed:
-            st.error("⏳ تذكر: لديك 30 ثانية فقط لهذه الشريحة!")
-            
-        # عرض التغذية الراجعة للسؤال السابق (إن وجدت)
-        if st.session_state.feedback:
-            if "صحيحة" in st.session_state.feedback:
-                st.success(st.session_state.feedback)
-            else:
-                st.error(st.session_state.feedback)
         
         # عرض الصورة
         img_path = os.path.join(FOLDER_NAME, current_slide)
@@ -179,33 +129,22 @@ else:
             image = Image.open(img_path)
             st.image(image, use_container_width=True)
         except FileNotFoundError:
-            st.error(f"❌ لم يتم العثور على الصورة: {img_path}. تأكد من وجودها في مجلد {FOLDER_NAME}.")
+            st.error(f"❌ لم يتم العثور على الصورة: {current_slide}. تأكد من وجودها في مجلد {FOLDER_NAME}.")
             
-        # نموذج الإجابة
-        with st.form(key='answer_form', clear_on_submit=True):
-            user_answer = st.text_input("✍️ اكتب تشخيصك / اسم الشريحة هنا:")
-            submit_btn = st.form_submit_button("تأكيد الإجابة")
-            
-            if submit_btn:
-                time_taken = time.time() - st.session_state.q_start_time
-                
-                # التحقق من الوقت في حال كان الوضع مؤقت
-                if st.session_state.is_timed and time_taken > 30:
-                    st.session_state.feedback = f"⏰ انتهى الوقت (استغرقت {int(time_taken)} ثانية)! الإجابة الصحيحة كانت: {correct_answer}"
-                else:
-                    # مقارنة الإجابة (تتجاهل المسافات الزائدة وحالة الأحرف لو كانت إنجليزية)
-                    if user_answer.strip().lower() == correct_answer.strip().lower():
-                        st.session_state.score += 1
-                        st.session_state.feedback = "✅ إجابة صحيحة!"
-                    else:
-                        st.session_state.feedback = f"❌ إجابة خاطئة! الإجابة الصحيحة هي: {correct_answer}"
-                
-                # الانتقال للسؤال التالي
+        # أزرار التحكم بالإجابة
+        if not st.session_state.show_answer:
+            st.info("فكر في التشخيص والميكانيكية (Mechanism / MLI)، ثم اضغط على الزر أدناه للتأكد.")
+            if st.button("👁️ إظهار الإجابة الصحيحة"):
+                st.session_state.show_answer = True
+                st.rerun()
+        else:
+            st.success(f"**الإجابة النموذجية:** {correct_answer}")
+            if st.button("➡️ الشريحة التالية"):
                 st.session_state.current_q_index += 1
-                st.session_state.q_start_time = time.time() # إعادة ضبط المؤقت للسؤال القادم
+                st.session_state.show_answer = False
                 st.rerun()
 
-        # زر إنهاء الاختبار مبكراً
-        if st.button("🛑 إنهاء الاختبار الآن"):
+        st.markdown("---")
+        if st.button("🛑 إنهاء المراجعة الآن"):
             st.session_state.quiz_started = False
             st.rerun()
