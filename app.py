@@ -4,20 +4,61 @@ import time
 import os
 from PIL import Image
 
-# إعدادات الصفحة
-st.set_page_config(page_title="Forensic Quiz 24/25", page_icon="🔬", layout="centered")
+# ==========================================
+# إعدادات الصفحة والتصميم الاحترافي (CSS)
+# ==========================================
+st.set_page_config(page_title="Forensic Slides Quiz", page_icon="🔬", layout="centered")
 
-# CSS لتصميم احترافي (الواجهة الرسومية)
 st.markdown("""
     <style>
-    .main-title { text-align: center; color: #1e3a8a; font-size: 2.5em; font-weight: 800; }
-    .timer-box { font-size: 3em; font-weight: bold; color: #ef4444; text-align: center; background: #fee2e2; border-radius: 15px; padding: 10px; margin: 20px 0; }
-    .q-box { background: #f1f5f9; padding: 20px; border-radius: 10px; border-left: 5px solid #2563eb; margin-bottom: 20px; font-size: 1.2em; }
-    .ans-box { background: #f0fdf4; padding: 20px; border-radius: 10px; border-left: 5px solid #16a34a; margin-top: 10px; }
+    .title-en { text-align: center; color: #1E3A8A; font-size: 2.2em; font-weight: bold; margin-bottom: 5px; font-family: 'Arial', sans-serif;}
+    .title-ar { text-align: center; color: #B91C1C; font-size: 1.8em; font-weight: bold; margin-top: 0px; margin-bottom: 25px; font-family: 'Tajawal', sans-serif;}
+    
+    .question-box {
+        background-color: #EFF6FF;
+        border-left: 6px solid #3B82F6;
+        padding: 15px;
+        border-radius: 8px;
+        color: #1E3A8A;
+        font-size: 1.2em;
+        margin-bottom: 15px;
+        direction: ltr;
+        text-align: left;
+    }
+    
+    .user-answer-card {
+        background-color: #F3F4F6;
+        border-left: 6px solid #6B7280;
+        padding: 15px;
+        border-radius: 8px;
+        color: #374151;
+        font-size: 1.1em;
+        margin-bottom: 10px;
+        direction: ltr;
+        text-align: left;
+    }
+
+    .answer-card { 
+        background-color: #F0FDF4; 
+        border-left: 6px solid #16A34A; 
+        padding: 15px; 
+        border-radius: 8px; 
+        color: #14532D; 
+        font-size: 1.2em; 
+        font-weight: bold; 
+        margin-bottom: 20px;
+        direction: ltr;
+        text-align: left;
+    }
+    
+    .time-success { color: #16A34A; font-weight: bold; font-size: 1.1em; text-align: center;}
+    .time-warning { color: #DC2626; font-weight: bold; font-size: 1.1em; text-align: center;}
     </style>
 """, unsafe_allow_html=True)
 
-# قاعدة البيانات (الـ 54 شريحة)
+# ==========================================
+# 1. البيانات (الصور، الأسئلة، والإجابات)
+# ==========================================
 SLIDES_DATA = {
     "img35.jpg": {"q": "Identify the type of injury and its cause.", "a": "Extensive bruises/ contusions cause by blunt truma"},
     "img36.jpg": {"q": "Identify the type of fracture and the instrument used.", "a": "cut fracture done by a sharp heavy instrument"},
@@ -75,36 +116,143 @@ SLIDES_DATA = {
     "img148.jpg": {"q": "Identify the type of hair and describe its medulla and cortex.", "a": "Human hair – Absent medulla & thick cortex"}
 }
 
-# التهيئة
-if 'q_idx' not in st.session_state: st.session_state.q_idx = 0
-if 'started' not in st.session_state: st.session_state.started = False
+FOLDER_NAME = "forensic-slides"
 
-st.markdown("<h1 class='main-title'>🔬 Forensic Master</h1>", unsafe_allow_html=True)
+# ==========================================
+# 2. تهيئة المتغيرات (Session State)
+# ==========================================
+if 'quiz_started' not in st.session_state:
+    st.session_state.quiz_started = False
+if 'current_q_index' not in st.session_state:
+    st.session_state.current_q_index = 0
+if 'selected_slides' not in st.session_state:
+    st.session_state.selected_slides = []
+if 'show_answer' not in st.session_state:
+    st.session_state.show_answer = False
+if 'use_timer' not in st.session_state:
+    st.session_state.use_timer = False
+if 'q_start_time' not in st.session_state:
+    st.session_state.q_start_time = 0.0
+if 'time_taken' not in st.session_state:
+    st.session_state.time_taken = 0.0
+if 'stored_user_answer' not in st.session_state:
+    st.session_state.stored_user_answer = ""
 
-if not st.session_state.started:
-    if st.button("🚀 ابدأ التحدي الآن"):
-        st.session_state.started = True
-        st.session_state.slides = random.sample(list(SLIDES_DATA.keys()), len(SLIDES_DATA))
+# عرض العنوان الثابت
+st.markdown("<div class='title-en'>🔬 Forensic Medicine Slides Quiz</div>", unsafe_allow_html=True)
+st.markdown("<div class='title-ar'>محاكي اختبار شرائح الطب الشرعي</div>", unsafe_allow_html=True)
+st.markdown("---")
+
+# ==========================================
+# 3. واجهة البداية (الإعدادات)
+# ==========================================
+if not st.session_state.quiz_started:
+    
+    st.markdown("### ⚙️ إعدادات الاختبار:")
+    total_available = len(SLIDES_DATA)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        num_questions = st.number_input(
+            f"عدد الشرائح (الأقصى {total_available}):", 
+            min_value=1, 
+            max_value=total_available, 
+            value=min(10, total_available)
+        )
+    with col2:
+        st.markdown("<br>", unsafe_allow_html=True) 
+        st.session_state.use_timer = st.checkbox("⏳ تفعيل تحدي المؤقت (30 ثانية)")
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    if st.button("🚀 ابدأ الاختبار الآن", use_container_width=True):
+        all_slides = list(SLIDES_DATA.keys())
+        st.session_state.selected_slides = random.sample(all_slides, num_questions)
+        st.session_state.quiz_started = True
+        st.session_state.current_q_index = 0
+        st.session_state.show_answer = False
+        st.session_state.stored_user_answer = ""
+        st.session_state.q_start_time = time.time()
         st.rerun()
+
+# ==========================================
+# 4. واجهة المراجعة والاختبار
+# ==========================================
 else:
-    idx = st.session_state.q_idx
-    if idx < len(st.session_state.slides):
-        img = st.session_state.slides[idx]
-        st.markdown(f"<div class='q-box'>❓ {SLIDES_DATA[img]['q']}</div>", unsafe_allow_html=True)
-        
-        # المؤقت
-        timer_placeholder = st.empty()
-        for i in range(30, 0, -1):
-            timer_placeholder.markdown(f"<div class='timer-box'>⏳ {i}</div>", unsafe_allow_html=True)
-            time.sleep(1)
-        
-        st.image(os.path.join("forensic-slides", img), use_container_width=True)
-        ans = st.text_area("اكتب إجابتك هنا:")
-        
-        if st.button("تأكيد"):
-            st.markdown(f"<div class='ans-box'>✅ <b>الإجابة الصحيحة:</b> {SLIDES_DATA[img]['a']}</div>", unsafe_allow_html=True)
-            if st.button("السؤال التالي"):
-                st.session_state.q_idx += 1
-                st.rerun()
+    total_q = len(st.session_state.selected_slides)
+    current_q = st.session_state.current_q_index
+    
+    if current_q >= total_q:
+        st.balloons()
+        st.success("🎉 لقد أنهيت جميع الشرائح المحددة، أحسنت يا دكتور! 🥇")
+        if st.button("🔄 بدء اختبار جديد", use_container_width=True):
+            st.session_state.quiz_started = False
+            st.rerun()
+            
     else:
-        st.success("🎉 انتهيت من جميع الأسئلة!")
+        # شريط التقدم
+        st.progress(current_q / total_q)
+        st.markdown(f"**الشريحة {current_q + 1} من {total_q}**")
+        
+        current_slide = st.session_state.selected_slides[current_q]
+        slide_data = SLIDES_DATA[current_slide]
+        question_text = slide_data["q"]
+        correct_answer = slide_data["a"]
+        
+        # 1. عرض السؤال بالإنجليزي
+        st.markdown(f"<div class='question-box'>❓ <b>Question:</b> {question_text}</div>", unsafe_allow_html=True)
+        
+        # 2. عرض الصورة
+        img_path = os.path.join(FOLDER_NAME, current_slide)
+        try:
+            image = Image.open(img_path)
+            st.image(image, use_container_width=True)
+        except FileNotFoundError:
+            st.error(f"❌ لم يتم العثور على الصورة: {current_slide}.")
+            
+        # 3. منطقة الإجابة والمؤقت
+        if not st.session_state.show_answer:
+            if st.session_state.use_timer:
+                st.info("⏳ المؤقت يعمل... اكتب إجابتك بسرعة!")
+                
+            # مربع إدخال النص
+            user_input = st.text_area("✍️ Write your answer here / اكتب إجابتك هنا:", height=100)
+            
+            if st.button("👁️ تأكيد وإظهار الإجابة الصحيحة", use_container_width=True, type="primary"):
+                st.session_state.stored_user_answer = user_input
+                st.session_state.time_taken = time.time() - st.session_state.q_start_time
+                st.session_state.show_answer = True
+                st.rerun()
+                
+        # 4. منطقة عرض النتيجة والتصحيح
+        else:
+            # عرض إجابة الطالب
+            st.markdown("<b>📝 إجابتك (Your Answer):</b>", unsafe_allow_html=True)
+            user_text = st.session_state.stored_user_answer if st.session_state.stored_user_answer.strip() else "لم تكتب شيئاً (No answer provided)"
+            st.markdown(f"<div class='user-answer-card'>{user_text}</div>", unsafe_allow_html=True)
+            
+            # عرض الإجابة النموذجية
+            st.markdown("<b>✅ الإجابة النموذجية (Model Answer):</b>", unsafe_allow_html=True)
+            st.markdown(f"<div class='answer-card'>{correct_answer}</div>", unsafe_allow_html=True)
+            
+            # عرض نتيجة المؤقت إن كان مفعلاً
+            if st.session_state.use_timer:
+                t = int(st.session_state.time_taken)
+                if t <= 30:
+                    st.markdown(f"<div class='time-success'>⏱️ استغرقت {t} ثانية.</div>", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"<div class='time-warning'>⚠️ استغرقت {t} ثانية (تجاوزت الـ 30 ثانية).</div>", unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            if st.button("➡️ السؤال التالي (Next Slide)", use_container_width=True, type="primary"):
+                st.session_state.current_q_index += 1
+                st.session_state.show_answer = False
+                st.session_state.stored_user_answer = ""
+                st.session_state.q_start_time = time.time()
+                st.rerun()
+
+        st.markdown("---")
+        if st.button("🛑 إنهاء الاختبار والعودة للإعدادات"):
+            st.session_state.quiz_started = False
+            st.rerun()
