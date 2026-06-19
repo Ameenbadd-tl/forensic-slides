@@ -6,18 +6,13 @@ from pathlib import Path
 import streamlit as st
 import streamlit.components.v1 as components
 
-
-st.set_page_config(
-    page_title="Forensic Slides Quiz",
-    page_icon="🧠",
-    layout="wide",
-)
+st.set_page_config(page_title="Forensic Slides Quiz", page_icon="🧠", layout="wide")
 
 st.markdown(
     """
     <style>
       #MainMenu, header, footer {visibility: hidden;}
-      .block-container {padding-top: 0.75rem; padding-bottom: 0.75rem; max-width: 100%;}
+      .block-container {padding-top: 0.5rem; padding-bottom: 0.5rem; max-width: 100%;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -81,23 +76,22 @@ SLIDES_DATA = {
 
 FOLDER_NAME = "forensic-slides"
 
+
 def file_to_data_url(path: Path) -> str | None:
     if not path.exists() or not path.is_file():
         return None
 
     mime_type, _ = mimetypes.guess_type(str(path))
     mime_type = mime_type or "application/octet-stream"
-
-    raw = path.read_bytes()
-    encoded = base64.b64encode(raw).decode("utf-8")
+    encoded = base64.b64encode(path.read_bytes()).decode("utf-8")
     return f"data:{mime_type};base64,{encoded}"
 
 
 def resolve_image(slide_id: str) -> str | None:
     base_dir = Path(__file__).parent
     search_paths = [
-        base_dir / "forensic-slides" / slide_id,
-        base_dir / "static" / "forensic-slides" / slide_id,
+        base_dir / FOLDER_NAME / slide_id,
+        base_dir / "static" / FOLDER_NAME / slide_id,
         base_dir / "images" / slide_id,
         base_dir / slide_id,
     ]
@@ -110,10 +104,15 @@ def resolve_image(slide_id: str) -> str | None:
 
 
 slides_with_images = []
-for slide in FORENSIC_SLIDES:
-    item = dict(slide)
-    item["image"] = resolve_image(slide["id"])
-    slides_with_images.append(item)
+for file_name, item in SLIDES_DATA.items():
+    slides_with_images.append(
+        {
+            "id": file_name,
+            "question": item["q"],
+            "answer": item["a"],
+            "image": resolve_image(file_name),
+        }
+    )
 
 slides_json = json.dumps(slides_with_images, ensure_ascii=False)
 
@@ -147,10 +146,7 @@ HTML = """
       margin:0;
       padding:0;
       font-family:Inter,Segoe UI,Tahoma,Arial,sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(17,24,39,.06), transparent 30%),
-        radial-gradient(circle at bottom right, rgba(99,102,241,.08), transparent 25%),
-        var(--bg);
+      background:var(--bg);
       color:var(--text);
     }
 
@@ -161,112 +157,26 @@ HTML = """
       margin:0 auto;
     }
 
-    .hero{
-      display:grid;
-      grid-template-columns:1.2fr .8fr;
-      gap:24px;
-      background:rgba(255,255,255,.92);
+    .top-panel{
+      max-width:720px;
+      margin:0 auto 24px;
+      background:rgba(255,255,255,.96);
       border:1px solid var(--line);
-      border-radius:32px;
+      border-radius:28px;
       box-shadow:var(--shadow);
-      padding:32px;
-      overflow:hidden;
-      position:relative;
+      padding:24px;
     }
 
-    .hero::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:
-        linear-gradient(135deg, rgba(17,24,39,.06), transparent 40%),
-        linear-gradient(315deg, rgba(99,102,241,.08), transparent 45%);
-      pointer-events:none;
-    }
-
-    .hero > *{position:relative; z-index:1}
-
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.82);
-      color:var(--muted);
-      border-radius:999px;
-      padding:10px 14px;
-      font-size:14px;
-      width:fit-content;
-      backdrop-filter:blur(10px);
-    }
-
-    h1{
-      margin:18px 0 12px;
-      font-size:42px;
-      line-height:1.15;
-      letter-spacing:-.03em;
-    }
-
-    .sub{
-      margin:0;
-      color:var(--muted);
-      font-size:17px;
-      line-height:1.8;
-      max-width:780px;
-    }
-
-    .features{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:14px;
-      margin-top:24px;
-    }
-
-    .feature{
-      background:rgba(255,255,255,.82);
-      border:1px solid var(--line);
-      border-radius:22px;
-      padding:18px;
-      box-shadow:0 6px 20px rgba(17,24,39,.04);
-    }
-
-    .feature .icon{
-      width:42px;height:42px;border-radius:14px;
-      display:flex;align-items:center;justify-content:center;
-      background:#f3f4f6;
-      font-size:18px;
-      margin-bottom:12px;
-    }
-
-    .feature h3{
-      margin:0 0 6px;
-      font-size:16px;
-    }
-
-    .feature p{
-      margin:0;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.7;
-    }
-
-    .panel{
-      background:rgba(255,255,255,.9);
-      border:1px solid var(--line);
-      border-radius:26px;
-      padding:22px;
-    }
-
-    .panel h2{
+    .top-panel h2{
       margin:0 0 8px;
       font-size:24px;
     }
 
-    .panel .small{
+    .small{
       color:var(--muted);
-      margin-bottom:22px;
       line-height:1.7;
       font-size:14px;
+      margin-bottom:18px;
     }
 
     .field{margin-bottom:18px}
@@ -687,10 +597,7 @@ HTML = """
     }
 
     @media (max-width: 980px){
-      .hero, .main-grid{
-        grid-template-columns:1fr;
-      }
-      .features{
+      .main-grid{
         grid-template-columns:1fr;
       }
       .answer-grid, .summary{
@@ -699,76 +606,49 @@ HTML = """
       .answer-tools{
         grid-template-columns:1fr;
       }
-      h1{font-size:34px}
+      .top-panel{
+        max-width:100%;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <section class="hero">
-      <div>
-        <div class="badge">Forensic Medicine Slides Quiz</div>
-        <h1>واجهة أحدث وأكثر احترافية لاختبار الشرائح</h1>
-        <p class="sub">
-          تصميم أنظف، بطاقات أوضح، مؤقت تنازلي حيّ يظهر 30 ثم 29 ثم 28،
-          وتجربة مراجعة سريعة تساعد الطالب يركز ويتحمس.
-        </p>
+    <section class="top-panel">
+      <h2>Start Quiz</h2>
+      <div class="small">
+        اختر عدد الشرائح وفعّل المؤقت إذا رغبت.
+      </div>
 
-        <div class="features">
-          <div class="feature">
-            <div class="icon">✨</div>
-            <h3>واجهة نظيفة</h3>
-            <p>ألوان هادئة وبطاقات مرتبة بدل شكل الأزرار القديم.</p>
-          </div>
-          <div class="feature">
-            <div class="icon">⏱</div>
-            <h3>مؤقت حي</h3>
-            <p>عد تنازلي واضح يزيد الحماس في كل سؤال.</p>
-          </div>
-          <div class="feature">
-            <div class="icon">🧠</div>
-            <h3>مراجعة أسرع</h3>
-            <p>إجابتك والنموذج جنب بعض بشكل منظم.</p>
-          </div>
+      <div class="field">
+        <label class="label" for="questionCount">عدد الشرائح</label>
+        <input id="questionCount" type="number" min="1" value="10" />
+        <div class="small" id="maxSlidesText" style="margin-top:8px;margin-bottom:0;"></div>
+      </div>
+
+      <div class="switch-row">
+        <div>
+          <div style="font-weight:700;margin-bottom:4px;">تحدي المؤقت</div>
+          <div style="color:var(--muted);font-size:13px;">عرض العد التنازلي من 30 ثانية لكل سؤال.</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:700;">
+          <input id="useTimer" type="checkbox" checked />
+          تشغيل
+        </label>
+      </div>
+
+      <div class="meta-grid">
+        <div class="meta-box">
+          <span>إجمالي الشرائح</span>
+          <strong id="totalSlidesValue">0</strong>
+        </div>
+        <div class="meta-box">
+          <span>مدة السؤال</span>
+          <strong>30 ثانية</strong>
         </div>
       </div>
 
-      <div class="panel">
-        <h2>ابدأ الاختبار</h2>
-        <div class="small">
-          اختر عدد الشرائح وفعّل المؤقت لو تحب تجربة أسرع وأكثر حماس.
-        </div>
-
-        <div class="field">
-          <label class="label" for="questionCount">عدد الشرائح</label>
-          <input id="questionCount" type="number" min="1" value="10" />
-          <div class="small" id="maxSlidesText" style="margin-top:8px;margin-bottom:0;"></div>
-        </div>
-
-        <div class="switch-row">
-          <div>
-            <div style="font-weight:700;margin-bottom:4px;">تحدي المؤقت</div>
-            <div style="color:var(--muted);font-size:13px;">عرض العد التنازلي من 30 ثانية لكل سؤال.</div>
-          </div>
-          <label style="display:flex;align-items:center;gap:8px;font-weight:700;">
-            <input id="useTimer" type="checkbox" checked />
-            تشغيل
-          </label>
-        </div>
-
-        <div class="meta-grid">
-          <div class="meta-box">
-            <span>إجمالي الشرائح</span>
-            <strong id="totalSlidesValue">0</strong>
-          </div>
-          <div class="meta-box">
-            <span>مدة السؤال</span>
-            <strong>30 ثانية</strong>
-          </div>
-        </div>
-
-        <button class="btn btn-primary" id="startBtn">ابدأ الاختبار الآن</button>
-      </div>
+      <button class="btn btn-primary" id="startBtn">ابدأ الاختبار الآن</button>
     </section>
 
     <section class="main-grid" id="mainGrid">
@@ -778,7 +658,7 @@ HTML = """
             <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;">
               <div>
                 <h2 class="section-title" style="margin:0 0 6px;">لوحة المتابعة</h2>
-                <p class="section-sub">راقب التقدم، السرعة، وحالة المؤقت أثناء الحل.</p>
+                <p class="section-sub">متابعة التقدم والزمن وحالة المؤقت.</p>
               </div>
               <div class="timer-badge" id="sideTimerBadge">30s</div>
             </div>
@@ -815,7 +695,7 @@ HTML = """
             </div>
 
             <div class="tip" id="tipBox">
-              اكتب الكلمات المفتاحية أولاً، وبعدها راجع السبب أو الآلية قبل ما تظهر الإجابة النموذجية.
+              اكتب إجابتك ثم اعرض الإجابة النموذجية للمقارنة.
             </div>
 
             <div style="margin-top:16px;">
@@ -863,15 +743,6 @@ HTML = """
     totalSlidesValue.textContent = ALL_SLIDES.length;
     maxSlidesText.textContent = "الحد الأقصى " + ALL_SLIDES.length + " شريحة.";
 
-    function shuffleArray(array) {
-      const copy = [...array];
-      for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
-      }
-      return copy;
-    }
-
     function getQuestionCount() {
       let count = parseInt(questionCountInput.value || "1", 10);
       if (isNaN(count)) count = 1;
@@ -883,7 +754,7 @@ HTML = """
 
     function startQuiz() {
       const count = getQuestionCount();
-      selectedSlides = shuffleArray(ALL_SLIDES).slice(0, count);
+      selectedSlides = ALL_SLIDES.slice(0, count);
       currentIndex = 0;
       results = [];
       quizState = "question";
@@ -1015,10 +886,10 @@ HTML = """
       progressPercent.textContent = percent + "% مكتمل";
 
       if (quizState === "complete") {
-        tipBox.innerHTML = "ممتاز. خلصت كل الشرائح المحددة. تقدر تبدأ جولة جديدة أو تغيّر عدد الشرائح من الأعلى.";
+        tipBox.innerHTML = "تم إنهاء جميع الشرائح المحددة بنجاح.";
         tipBox.className = "success-note";
       } else {
-        tipBox.innerHTML = "اكتب الكلمات المفتاحية أولاً، وبعدها راجع السبب أو الآلية قبل ما تظهر الإجابة النموذجية.";
+        tipBox.innerHTML = "اكتب إجابتك ثم اعرض الإجابة النموذجية للمقارنة.";
         tipBox.className = "tip";
       }
 
@@ -1035,7 +906,7 @@ HTML = """
       return `
         <div class="image-fallback">
           <h3 style="margin:0 0 8px;color:#111827">الصورة غير متاحة حالياً</h3>
-          <div>ضع الصور في forensic-slides أو static/forensic-slides بنفس الأسماء الحالية.</div>
+          <div>ضع الصور في ${escapeHtml("__FOLDER_NAME__")} أو static/${escapeHtml("__FOLDER_NAME__")} بنفس الأسماء الحالية.</div>
         </div>
       `;
     }
@@ -1069,7 +940,7 @@ HTML = """
               <div>
                 <div class="question-box" style="margin-top:0;">
                   <small>Write your answer</small>
-                  <p style="margin-top:10px;font-size:14px;color:var(--muted);">اكتب بحرية، وبعدها اعرض النموذج للمقارنة السريعة.</p>
+                  <p style="margin-top:10px;font-size:14px;color:var(--muted);">اكتب إجابتك هنا ثم قارنها بالإجابة النموذجية.</p>
                 </div>
               </div>
 
@@ -1085,7 +956,7 @@ HTML = """
             </div>
 
             <div class="actions">
-              <button class="btn btn-primary" style="width:auto;" onclick="revealAnswer(false)">تأكيد وإظهار الإجابة</button>
+              <button class="btn btn-primary" style="width:auto;" onclick="revealAnswer(false)">إظهار الإجابة</button>
             </div>
           </div>
         </div>
@@ -1156,7 +1027,7 @@ HTML = """
         <div class="card">
           <div class="card-header">
             <h2 class="section-title" style="margin:0 0 8px;">Session complete</h2>
-            <p class="section-sub">راجع أرقامك بسرعة ثم ابدأ اختبار جديد لو تحب.</p>
+            <p class="section-sub">تم إنهاء الجلسة.</p>
           </div>
 
           <div class="card-body">
@@ -1176,7 +1047,7 @@ HTML = """
             </div>
 
             <div class="success-note" style="margin-top:18px;">
-              ممتاز. خلصت الجلسة بنجاح، وتقدر تبدأ اختبار جديد وقت ما تحب.
+              يمكنك بدء اختبار جديد متى شئت.
             </div>
 
             <div class="actions" style="margin-top:18px;">
@@ -1203,6 +1074,6 @@ HTML = """
 </html>
 """
 
-html_with_data = HTML.replace("__SLIDES_JSON__", slides_json)
+html_with_data = HTML.replace("__SLIDES_JSON__", slides_json).replace("__FOLDER_NAME__", FOLDER_NAME)
 
 components.html(html_with_data, height=2400, scrolling=True)
