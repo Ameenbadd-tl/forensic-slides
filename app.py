@@ -145,6 +145,8 @@ st.markdown("""
         font-size: 1.2em;
         font-weight: 600;
         margin-top: 15px;
+        direction: ltr;
+        text-align: left;
     }
 
     /* إجابة المستخدم */
@@ -156,6 +158,8 @@ st.markdown("""
         color: #4A148C;
         font-size: 1.1em;
         margin-top: 10px;
+        direction: ltr;
+        text-align: left;
     }
     
     /* تنسيق الصور */
@@ -168,7 +172,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 1. البيانات (الصور، الأسئلة، والإجابات)
+# 1. البيانات الصحيحة (الصور، الأسئلة، والإجابات)
 # ==========================================
 SLIDES_DATA = {
     "img35.jpg": {"q": "Identify the type of injury and its cause.", "a": "Extensive bruises/ contusions cause by blunt truma"},
@@ -355,7 +359,6 @@ else:
                     st.toast("⚠️ انتهى الوقت!", icon="⏰")
                     st.session_state.show_answer = True
                     st.session_state.time_taken = st.session_state.timer_duration
-                    time.sleep(1)
                     st.rerun()
                 
                 time.sleep(1)
