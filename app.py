@@ -4,8 +4,38 @@ import time
 import os
 from PIL import Image
 
-# إعدادات الصفحة
-st.set_page_config(page_title="Forensic Slides 24/25", page_icon="🔬", layout="centered")
+# ==========================================
+# إعدادات الصفحة والتصميم الاحترافي (CSS)
+# ==========================================
+st.set_page_config(page_title="Forensic Slides Quiz", page_icon="🔬", layout="centered")
+
+st.markdown("""
+    <style>
+    /* تنسيق العناوين */
+    .title-en { text-align: center; color: #1E3A8A; font-size: 2.2em; font-weight: bold; margin-bottom: 5px; font-family: 'Arial', sans-serif;}
+    .title-ar { text-align: center; color: #B91C1C; font-size: 1.8em; font-weight: bold; margin-top: 0px; margin-bottom: 25px; font-family: 'Tajawal', sans-serif;}
+    
+    /* تنسيق بطاقة الإجابة */
+    .answer-card { 
+        background-color: #F0FDF4; 
+        border-right: 6px solid #16A34A; /* خط أخضر على اليمين */
+        padding: 20px; 
+        border-radius: 10px; 
+        color: #14532D; 
+        font-size: 1.3em; 
+        font-weight: bold; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        text-align: left;
+        direction: ltr;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+    
+    /* تنسيق رسائل الوقت */
+    .time-success { color: #16A34A; font-weight: bold; font-size: 1.1em; text-align: center;}
+    .time-warning { color: #DC2626; font-weight: bold; font-size: 1.1em; text-align: center;}
+    </style>
+""", unsafe_allow_html=True)
 
 # ==========================================
 # 1. البيانات (الصور والإجابات)
@@ -70,7 +100,7 @@ SLIDES_DATA = {
 FOLDER_NAME = "forensic-slides"
 
 # ==========================================
-# 2. تهيئة المتغيرات
+# 2. تهيئة المتغيرات (Session State)
 # ==========================================
 if 'quiz_started' not in st.session_state:
     st.session_state.quiz_started = False
@@ -80,48 +110,73 @@ if 'selected_slides' not in st.session_state:
     st.session_state.selected_slides = []
 if 'show_answer' not in st.session_state:
     st.session_state.show_answer = False
+if 'use_timer' not in st.session_state:
+    st.session_state.use_timer = False
+if 'q_start_time' not in st.session_state:
+    st.session_state.q_start_time = 0.0
+if 'time_taken' not in st.session_state:
+    st.session_state.time_taken = 0.0
+
+# عرض العنوان الثابت في كل الصفحات
+st.markdown("<div class='title-en'>🔬 Forensic Medicine Slides Quiz</div>", unsafe_allow_html=True)
+st.markdown("<div class='title-ar'>محاكي اختبار شرائح الطب الشرعي</div>", unsafe_allow_html=True)
+st.markdown("---")
 
 # ==========================================
 # 3. واجهة البداية (الإعدادات)
 # ==========================================
 if not st.session_state.quiz_started:
-    st.title("🔬 مراجعة شرائح الطب الشرعي - دفعة 24/25")
-    st.write("اختبر معلوماتك وتأكد من التشخيص والميكانيكية.")
     
+    st.markdown("### ⚙️ إعدادات المراجعة:")
     total_available = len(SLIDES_DATA)
     
-    num_questions = st.number_input(
-        f"كم شريحة تريد في هذه الجلسة؟ (الإجمالي {total_available})", 
-        min_value=1, 
-        max_value=total_available, 
-        value=min(10, total_available)
-    )
+    col1, col2 = st.columns(2)
+    with col1:
+        num_questions = st.number_input(
+            f"عدد الشرائح (الأقصى {total_available}):", 
+            min_value=1, 
+            max_value=total_available, 
+            value=min(10, total_available)
+        )
+    with col2:
+        st.markdown("<br>", unsafe_allow_html=True) # مسافة فارغة لضبط المحاذاة
+        st.session_state.use_timer = st.checkbox("⏳ تفعيل تحدي المؤقت (30 ثانية)")
     
-    if st.button("🚀 ابدأ المراجعة"):
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    if st.button("🚀 ابدأ المراجعة الآن", use_container_width=True):
         all_slides = list(SLIDES_DATA.keys())
         st.session_state.selected_slides = random.sample(all_slides, num_questions)
         st.session_state.quiz_started = True
         st.session_state.current_q_index = 0
         st.session_state.show_answer = False
+        st.session_state.q_start_time = time.time() # بدء حساب الوقت للسؤال الأول
         st.rerun()
 
 # ==========================================
 # 4. واجهة المراجعة (البطاقات)
 # ==========================================
 else:
-    if st.session_state.current_q_index >= len(st.session_state.selected_slides):
-        st.title("🎉 انتهت المراجعة!")
-        st.success("لقد أنهيت جميع الشرائح المحددة، أحسنت يا دكتور! 🥇")
+    total_q = len(st.session_state.selected_slides)
+    current_q = st.session_state.current_q_index
+    
+    if current_q >= total_q:
+        st.balloons()
+        st.success("🎉 لقد أنهيت جميع الشرائح المحددة، أحسنت يا دكتور! جاهز للامتحان إن شاء الله. 🥇")
             
-        if st.button("🔄 مراجعة شرائح أخرى"):
+        if st.button("🔄 بدء مراجعة جديدة", use_container_width=True):
             st.session_state.quiz_started = False
             st.rerun()
             
     else:
-        current_slide = st.session_state.selected_slides[st.session_state.current_q_index]
+        # شريط التقدم
+        progress_val = current_q / total_q
+        st.progress(progress_val)
+        
+        current_slide = st.session_state.selected_slides[current_q]
         correct_answer = SLIDES_DATA[current_slide]
         
-        st.markdown(f"### الشريحة {st.session_state.current_q_index + 1} من {len(st.session_state.selected_slides)}")
+        st.markdown(f"**الشريحة {current_q + 1} من {total_q}**")
         
         # عرض الصورة
         img_path = os.path.join(FOLDER_NAME, current_slide)
@@ -129,22 +184,41 @@ else:
             image = Image.open(img_path)
             st.image(image, use_container_width=True)
         except FileNotFoundError:
-            st.error(f"❌ لم يتم العثور على الصورة: {current_slide}. تأكد من وجودها في مجلد {FOLDER_NAME}.")
+            st.error(f"❌ لم يتم العثور على الصورة: {current_slide}. تأكد من رفعها للمجلد الصحيح.")
             
-        # أزرار التحكم بالإجابة
+        # منطقة الإجابة والمؤقت
         if not st.session_state.show_answer:
-            st.info("فكر في التشخيص والميكانيكية (Mechanism / MLI)، ثم اضغط على الزر أدناه للتأكد.")
-            if st.button("👁️ إظهار الإجابة الصحيحة"):
+            if st.session_state.use_timer:
+                st.info("⏳ فكر في التشخيص والميكانيكية بسرعة! لديك 30 ثانية...")
+            else:
+                st.info("🧠 فكر في التشخيص والميكانيكية، ثم تأكد من إجابتك.")
+                
+            if st.button("👁️ إظهار الإجابة الصحيحة", use_container_width=True):
+                # حساب الوقت المستغرق بمجرد الضغط
+                st.session_state.time_taken = time.time() - st.session_state.q_start_time
                 st.session_state.show_answer = True
                 st.rerun()
         else:
-            st.success(f"**الإجابة النموذجية:** {correct_answer}")
-            if st.button("➡️ الشريحة التالية"):
+            # عرض الإجابة النموذجية في بطاقة احترافية
+            st.markdown(f"<div class='answer-card'>{correct_answer}</div>", unsafe_allow_html=True)
+            
+            # عرض نتيجة المؤقت إن كان مفعلاً
+            if st.session_state.use_timer:
+                t = int(st.session_state.time_taken)
+                if t <= 30:
+                    st.markdown(f"<div class='time-success'>⏱️ رائع! استغرقت {t} ثانية فقط.</div>", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"<div class='time-warning'>⚠️ استغرقت {t} ثانية. حاول أن تكون أسرع في الامتحان! (الهدف: 30 ثانية)</div>", unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            if st.button("➡️ الشريحة التالية", use_container_width=True, type="primary"):
                 st.session_state.current_q_index += 1
                 st.session_state.show_answer = False
+                st.session_state.q_start_time = time.time() # إعادة ضبط المؤقت للسؤال القادم
                 st.rerun()
 
         st.markdown("---")
-        if st.button("🛑 إنهاء المراجعة الآن"):
+        if st.button("🛑 إنهاء أو تغيير الإعدادات"):
             st.session_state.quiz_started = False
             st.rerun()
