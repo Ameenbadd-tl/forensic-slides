@@ -11,12 +11,68 @@ st.set_page_config(page_title="Forensic Slides Quiz 24/25", page_icon="🔬", la
 # 1. منطقة إدخال البيانات (قم بتعبئتها أنت)
 # ==========================================
 # ضع اسم الصورة (مع الامتداد) كـ Key، والإجابة الصحيحة كـ Value
+# ==========================================
+# 1. منطقة إدخال البيانات (قم بتعبئتها أنت)
+# ==========================================
+# اكتب اسم الشريحة أو التشخيص بين علامتي التنصيص
+# ==========================================
+# 1. منطقة إدخال البيانات
+# ==========================================
 SLIDES_DATA = {
-    "slide1.jpg": "اسم الشريحة الأولى",
-    "slide2.png": "اسم الشريحة الثانية",
-    "slide3.jpg": "اسم الشريحة الثالثة",
-    # أضف باقي الـ 50 شريحة هنا...
-    # "اسم الصورة.jpg": "الإجابة الصحيحة",
+    "img35.jpg": "Extensive bruises/ contusions cause by blunt truma",
+    "img36.jpg": "cut fracture done by a sharp heavy instrument",
+    "img37.jpg": "spleen laceration cause blunt trauma",
+    "img45.jpg": "skin split of scalp casue exposure to extreme heat",
+    "img46.jpg": "froth secretion from mouth & nostrils D.D 1 putrefaction foul smell + continent blood 2- drowing",
+    "img47.jpg": "Aortic transaction between arch of aorta and descending due to steering wheel injury RTA",
+    "img50.jpg": "Sever lacerated wound in liver due to sever blunt truma",
+    "img51.jpg": "Depressed comminated fracture due to heavy blunt truma Wide surface area & high momentum",
+    "img52.jpg": "Sternum MLI : Less than 40y b/c xiphoid cartilage and body not united and body and manubrium on 60y",
+    "img60.jpg": "Gutter fracture due to bullet left inlet & right ex",
+    "img61.jpg": "Firing bullet there is rifling marks",
+    "img62.jpg": "Trench foot due to long immersion in cold water",
+    "img72.jpg": "Racon eye & spectacle hem due to fracture of base of skull anterior cranial fossa c/p : rhinorrhea",
+    "img73.jpg": "Animal hair – thick medulla & thin cortex",
+    "img74.jpg": "Lacerated wound in kidney due to blunt trauma.",
+    "img82.jpg": "Vault of skull Open anterior fontanelle indicating an age less than 1.5y",
+    "img83.jpg": "Left pointer : contact pallor mech : compression in blod vessles",
+    "img84.jpg": "Postmortem hypostasis (livor mortis mech : cessation of the circulation and relaxation of muscle tone leading gravitation",
+    "img89.jpg": "Contact pallor indicating prone position at death.",
+    "img90.jpg": "Skeletonization (indicated: more 6 months + less 1 year )",
+    "img91.jpg": "Extradural (epidural) hemorrhage caused by trauma",
+    "img96.jpg": "Hinge fracture , Cause: fall on the buttocks",
+    "img97.jpg": "Boxer (Pugilistic) attitude. Cause: exposure to extreme heat. Mechanism: coagulation and contraction of muscle proteins مش نفسها لكن زي ها",
+    "img98.jpg": "right is Male skull. 2 Features: prominent supraorbital ridges, angular frontonasal junction left is Female skull. 2 Features: less prominent supraorbital ridges, smotth frontonasal junction",
+    "img101.jpg": "Maceration. aseptic autolytic changes that occur in a fetus that died in utero",
+    "img102.jpg": "Bulla (blister). Causes: putrefaction content gas material burns content albumin protein",
+    "img103.jpg": "Cut defense wound",
+    "img106.jpg": "Cadaveric spasm. Occurs in situations of extreme nervous tension such as suicide",
+    "img107.jpg": "Petechial hemorrhages on the heart surface caused by asphyxia",
+    "img108.jpg": "Whiplash injury. caused by hyperflexion and hyperextension of the neck",
+    "img111.jpg": "suffocation by a plastic bag cause death asphyxia + or reflex carotid sinus cardiac arrest",
+    "img112.jpg": "Close firearm injury. MLI: 1. Distance of firearm discharge. 2. Print of muzzle. 3. Type of weapon",
+    "img113.jpg": "Lacerated wound of the scalp due to blunt trauma",
+    "img116.jpg": "Scald burn. ( moist burn) Sharp demarcation edge .2. Reddening of the skin",
+    "img117.jpg": "Rope burns (brush abrasion / ligature mark of hanging).",
+    "img118.jpg": "Impaction of food in the oropharyngeal (Café Coronary). + choking death : asphyxia or cardiac arrest",
+    "img119.jpg": "Petechial hemorrhages on the eyelid and Conjunctival in a case of manual strangulation or sneezing",
+    "img122.jpg": "Scalp avulsion of left face (flaying injury) due to a rotating wheel.",
+    "img123.jpg": "1- Incomplete hanging 2-arrow pointed to marbling phenonmen indicated time since of death is 48h in summer and 1 week un winter",
+    "img124.jpg": "Suspension point of hanging at the occipital region",
+    "img127.jpg": "Double running noose (Knot)",
+    "img128.jpg": "Brain absess in cerebral hemospher",
+    "img129.jpg": "Right side normal hyoid bone Left side : fracture of greater coroner of hyoid bone common in manual strangulation",
+    "img132.jpg": "Soot particles in trachea indicate antemortem burn death",
+    "img133.jpg": "Battles sign cause fracture of base of skull in middle cranial fossa otorrhea",
+    "img134.jpg": "Gagging cause of death asphyxia",
+    "img137.jpg": "smokeless powder content nitroglycerine or nitrocellulose one volume prodused 900 volumes of gases",
+    "img138.jpg": "Keloid scars from extensive burns",
+    "img139.jpg": "Suicidal hanging with dog lead , the mark rising to suspension point front the neck",
+    "img142.jpg": "large extradural hemorrhage",
+    "img143.jpg": "Ring fracture cause : falling from height on feet or boxer",
+    "img144.jpg": "blue arrow Contact pallor due to compression of blood vessels red arrow : hypostasis chery red color due to CO posion or cynaid po or cold ى والح لكن نفس مع تمش نفس صورة بزبط ل",
+    "img147.jpg": "Typical railway-line' bruises caused by a wooden rod.",
+    "img148.jpg": "Human hair – Absent medulla & thick cortex"
 }
 
 FOLDER_NAME = "forensic-slides"
