@@ -1,7 +1,27 @@
-from flask import Flask, render_template_string
+import base64
 import json
+import mimetypes
+from pathlib import Path
 
-app = Flask(__name__)
+import streamlit as st
+import streamlit.components.v1 as components
+
+
+st.set_page_config(
+    page_title="Forensic Slides Quiz",
+    page_icon="🧠",
+    layout="wide",
+)
+
+st.markdown(
+    """
+    <style>
+      #MainMenu, header, footer {visibility: hidden;}
+      .block-container {padding-top: 0.75rem; padding-bottom: 0.75rem; max-width: 100%;}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 FORENSIC_SLIDES = [
     {"id": "img35.jpg", "question": "Identify the type of injury and its cause.", "answer": "Extensive bruises/ contusions cause by blunt truma"},
@@ -60,6 +80,43 @@ FORENSIC_SLIDES = [
     {"id": "img148.jpg", "question": "Identify the type of hair and describe its medulla and cortex.", "answer": "Human hair – Absent medulla & thick cortex"},
 ]
 
+
+def file_to_data_url(path: Path) -> str | None:
+    if not path.exists() or not path.is_file():
+        return None
+
+    mime_type, _ = mimetypes.guess_type(str(path))
+    mime_type = mime_type or "application/octet-stream"
+
+    raw = path.read_bytes()
+    encoded = base64.b64encode(raw).decode("utf-8")
+    return f"data:{mime_type};base64,{encoded}"
+
+
+def resolve_image(slide_id: str) -> str | None:
+    base_dir = Path(__file__).parent
+    search_paths = [
+        base_dir / "forensic-slides" / slide_id,
+        base_dir / "static" / "forensic-slides" / slide_id,
+        base_dir / "images" / slide_id,
+        base_dir / slide_id,
+    ]
+
+    for path in search_paths:
+        data_url = file_to_data_url(path)
+        if data_url:
+            return data_url
+    return None
+
+
+slides_with_images = []
+for slide in FORENSIC_SLIDES:
+    item = dict(slide)
+    item["image"] = resolve_image(slide["id"])
+    slides_with_images.append(item)
+
+slides_json = json.dumps(slides_with_images, ensure_ascii=False)
+
 HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -76,7 +133,6 @@ HTML = """
       --line:#e5e7eb;
       --primary:#111827;
       --primary-2:#374151;
-      --accent:#eef2ff;
       --success:#166534;
       --success-bg:#ecfdf3;
       --danger:#b91c1c;
@@ -84,12 +140,12 @@ HTML = """
       --warning:#92400e;
       --warning-bg:#fff7ed;
       --shadow:0 12px 32px rgba(17,24,39,.08);
-      --radius:24px;
     }
 
     *{box-sizing:border-box}
-    body{
+    html,body{
       margin:0;
+      padding:0;
       font-family:Inter,Segoe UI,Tahoma,Arial,sans-serif;
       background:
         radial-gradient(circle at top left, rgba(17,24,39,.06), transparent 30%),
@@ -98,10 +154,11 @@ HTML = """
       color:var(--text);
     }
 
+    body{padding:20px}
+
     .container{
       max-width:1280px;
       margin:0 auto;
-      padding:24px;
     }
 
     .hero{
@@ -773,7 +830,7 @@ HTML = """
   </div>
 
   <script>
-    const ALL_SLIDES = {{ slides|safe }};
+    const ALL_SLIDES = __SLIDES_JSON__;
     const TIMER_SECONDS = 30;
 
     let selectedSlides = [];
@@ -971,9 +1028,20 @@ HTML = """
       }
     }
 
+    function imageHtml(slide) {
+      if (slide.image) {
+        return '<img src="' + slide.image + '" alt="' + escapeHtml(slide.question) + '">';
+      }
+      return `
+        <div class="image-fallback">
+          <h3 style="margin:0 0 8px;color:#111827">الصورة غير متاحة حالياً</h3>
+          <div>ضع الصور في forensic-slides أو static/forensic-slides بنفس الأسماء الحالية.</div>
+        </div>
+      `;
+    }
+
     function renderQuestion() {
       const slide = selectedSlides[currentIndex];
-      const imagePath = "/static/forensic-slides/" + slide.id;
 
       contentArea.innerHTML = `
         <div class="card">
@@ -994,8 +1062,7 @@ HTML = """
 
           <div class="card-body">
             <div class="image-box">
-              <img src="${imagePath}" alt="${escapeHtml(slide.question)}"
-                   onerror="this.parentElement.innerHTML='<div class=\\'image-fallback\\'><h3 style=\\'margin:0 0 8px;color:#111827\\'>الصورة غير متاحة حالياً</h3><div>أضف ملفات الصور داخل static/forensic-slides بنفس الأسماء الحالية.</div></div>'">
+              ${imageHtml(slide)}
             </div>
 
             <div class="answer-tools">
@@ -1047,8 +1114,7 @@ HTML = """
 
           <div class="card-body">
             <div class="image-box">
-              <img src="/static/forensic-slides/${slide.id}" alt="${escapeHtml(slide.question)}"
-                   onerror="this.parentElement.innerHTML='<div class=\\'image-fallback\\'><h3 style=\\'margin:0 0 8px;color:#111827\\'>الصورة غير متاحة حالياً</h3><div>أضف ملفات الصور داخل static/forensic-slides بنفس الأسماء الحالية.</div></div>'">
+              ${imageHtml(slide)}
             </div>
 
             <div class="answer-grid">
@@ -1137,9 +1203,6 @@ HTML = """
 </html>
 """
 
-@app.route("/")
-def home():
-    return render_template_string(HTML, slides=json.dumps(FORENSIC_SLIDES, ensure_ascii=False))
+html_with_data = HTML.replace("__SLIDES_JSON__", slides_json)
 
-if __name__ == "__main__":
-    app.run(debug=True)
+components.html(html_with_data, height=2400, scrolling=True)
