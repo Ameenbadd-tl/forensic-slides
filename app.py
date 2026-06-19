@@ -5,135 +5,164 @@ import os
 from PIL import Image
 
 # ==========================================
-# إعدادات الصفحة والتصميم الاحترافي (CSS)
+# إعدادات الصفحة والتصميم الملون (CSS)
 # ==========================================
 st.set_page_config(
-    page_title="Forensic Slides Quiz",
-    page_icon="🔬",
+    page_title="Forensic Quiz Pro",
+    page_icon="🧪",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# CSS محسّن للواجهة الاحترافية
+# CSS ملون وحيوي جداً
 st.markdown("""
     <style>
-    /* الألوان الأساسية */
-    :root {
-        --primary-color: #1E3A8A;
-        --secondary-color: #B91C1C;
-        --success-color: #16A34A;
-        --warning-color: #DC2626;
-        --info-color: #3B82F6;
-        --light-bg: #F8FAFC;
-    }
-    
-    /* العنوان الرئيسي */
-    .title-en {
-        text-align: center;
-        color: #1E3A8A;
-        font-size: 2.8em;
-        font-weight: 900;
-        margin-bottom: 5px;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        letter-spacing: -1px;
-    }
-    
-    .title-ar {
-        text-align: center;
-        color: #B91C1C;
-        font-size: 2.2em;
-        font-weight: 800;
-        margin-top: 0px;
-        margin-bottom: 30px;
-        font-family: 'Tajawal', 'Arial', sans-serif;
-    }
-    
-    /* صندوق السؤال */
-    .question-box {
-        background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
-        border-left: 6px solid #3B82F6;
-        border-radius: 12px;
-        padding: 20px;
-        color: #1E3A8A;
-        font-size: 1.25em;
-        margin-bottom: 20px;
-        direction: ltr;
-        text-align: left;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-    }
-    
-    /* صندوق إجابة المستخدم */
-    .user-answer-card {
-        background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
-        border-left: 6px solid #6B7280;
-        border-radius: 12px;
-        padding: 18px;
-        color: #374151;
-        font-size: 1.1em;
-        margin-bottom: 15px;
-        direction: ltr;
-        text-align: left;
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
+
+    /* الخلفية العامة */
+    .stApp {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     }
 
-    /* صندوق الإجابة النموذجية */
-    .answer-card {
-        background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
-        border-left: 6px solid #16A34A;
-        border-radius: 12px;
-        padding: 18px;
-        color: #14532D;
-        font-size: 1.15em;
-        font-weight: 600;
-        margin-bottom: 20px;
+    /* العناوين الملونة */
+    .main-title {
+        background: linear-gradient(90deg, #FF512F 0%, #DD2476 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+        font-size: 3.5em;
+        font-weight: 900;
+        margin-bottom: 10px;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    
+    .sub-title {
+        color: #4B0082;
+        text-align: center;
+        font-size: 2.2em;
+        font-weight: 700;
+        margin-top: 0px;
+        margin-bottom: 30px;
+        font-family: 'Tajawal', sans-serif;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* صندوق السؤال الملون */
+    .question-card {
+        background: white;
+        border-radius: 20px;
+        padding: 25px;
+        border-top: 10px solid #FF512F;
+        box-shadow: 0 15px 35px rgba(255, 81, 47, 0.15);
+        margin-bottom: 25px;
         direction: ltr;
         text-align: left;
     }
     
-    /* المؤقت التنازلي */
-    .timer-box {
-        background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
-        border: 3px solid #F59E0B;
-        border-radius: 15px;
-        padding: 25px;
-        text-align: center;
-        margin: 20px 0;
-        box-shadow: 0 8px 16px rgba(245, 158, 11, 0.2);
+    .question-header {
+        color: #FF512F;
+        font-size: 1.5em;
+        font-weight: 800;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
     }
-    
-    .timer-display {
-        font-size: 3.5em;
-        font-weight: 900;
-        color: #D97706;
-        font-family: 'Courier New', monospace;
-        letter-spacing: 3px;
-    }
-    
-    .timer-label {
-        font-size: 1.1em;
-        color: #B45309;
-        font-weight: 600;
-        margin-top: 10px;
-    }
-    
-    /* شريط التقدم */
-    .progress-info {
-        font-size: 1.1em;
-        font-weight: 600;
-        color: #1E3A8A;
-        margin-bottom: 15px;
-    }
-    
-    /* الأزرار المحسّنة */
-    .stButton > button {
-        border-radius: 10px;
-        font-weight: 600;
-        padding: 12px 24px;
+
+    /* مربع النص الملون */
+    .stTextArea textarea {
+        background-color: #FFF9F9 !important;
+        border: 2px solid #FF512F !important;
+        border-radius: 15px !important;
+        color: #333 !important;
+        font-size: 1.1em !important;
+        padding: 15px !important;
         transition: all 0.3s ease;
     }
     
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    .stTextArea textarea:focus {
+        box-shadow: 0 0 15px rgba(255, 81, 47, 0.3) !important;
+        transform: scale(1.01);
+    }
+
+    /* الأزرار الملونة */
+    div.stButton > button {
+        width: 100%;
+        border-radius: 50px !important;
+        height: 3.5em !important;
+        font-size: 1.2em !important;
+        font-weight: 700 !important;
+        color: white !important;
+        border: none !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2) !important;
+    }
+
+    /* زر البداية والتأكيد (برتقالي محمر) */
+    div.stButton > button:first-child {
+        background: linear-gradient(45deg, #FF512F, #DD2476) !important;
+    }
+    
+    /* زر السؤال التالي (أخضر زاهي) */
+    .next-btn div.stButton > button {
+        background: linear-gradient(45deg, #00b09b, #96c93d) !important;
+    }
+
+    div.stButton > button:hover {
+        transform: translateY(-3px) !important;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
+        filter: brightness(1.1);
+    }
+
+    /* المؤقت الملون */
+    .timer-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 25px;
+        padding: 20px;
+        text-align: center;
+        color: white;
+        box-shadow: 0 10px 20px rgba(118, 75, 162, 0.3);
+        margin: 20px 0;
+    }
+    
+    .timer-val {
+        font-size: 4em;
+        font-weight: 900;
+        text-shadow: 3px 3px 6px rgba(0,0,0,0.2);
+    }
+
+    /* شريط التقدم الملون */
+    .stProgress > div > div > div > div {
+        background-image: linear-gradient(to right, #4facfe 0%, #00f2fe 100%) !important;
+    }
+
+    /* الإجابة الصحيحة */
+    .correct-ans {
+        background: #E8F5E9;
+        border-right: 8px solid #2E7D32;
+        border-radius: 15px;
+        padding: 20px;
+        color: #1B5E20;
+        font-size: 1.2em;
+        font-weight: 600;
+        margin-top: 15px;
+    }
+
+    /* إجابة المستخدم */
+    .user-ans {
+        background: #F3E5F5;
+        border-right: 8px solid #7B1FA2;
+        border-radius: 15px;
+        padding: 20px;
+        color: #4A148C;
+        font-size: 1.1em;
+        margin-top: 10px;
+    }
+    
+    /* تنسيق الصور */
+    .stImage > img {
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        border: 5px solid white;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -223,51 +252,46 @@ if 'timer_duration' not in st.session_state:
     st.session_state.timer_duration = 30
 
 # عرض العنوان الثابت
-st.markdown("<div class='title-en'>🔬 Forensic Medicine Slides Quiz</div>", unsafe_allow_html=True)
-st.markdown("<div class='title-ar'>محاكي اختبار شرائح الطب الشرعي</div>", unsafe_allow_html=True)
-st.markdown("---")
+st.markdown("<div class='main-title'>🔬 Forensic Quiz Pro</div>", unsafe_allow_html=True)
+st.markdown("<div class='sub-title'>محاكي اختبار شرائح الطب الشرعي</div>", unsafe_allow_html=True)
 
 # ==========================================
 # 3. واجهة البداية (الإعدادات)
 # ==========================================
 if not st.session_state.quiz_started:
     
-    st.markdown("### ⚙️ إعدادات الاختبار:")
-    total_available = len(SLIDES_DATA)
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        num_questions = st.number_input(
-            f"عدد الشرائح (الأقصى {total_available}):", 
-            min_value=1, 
-            max_value=total_available, 
-            value=min(10, total_available)
-        )
-    with col2:
-        st.markdown("<br>", unsafe_allow_html=True) 
-        st.session_state.use_timer = st.checkbox("⏳ تفعيل تحدي المؤقت")
-    
-    with col3:
-        if st.session_state.use_timer:
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.session_state.timer_duration = st.number_input(
-                "مدة المؤقت (ثانية):",
-                min_value=10,
-                max_value=120,
-                value=30
+    with st.container():
+        st.markdown("<div style='background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);'>", unsafe_allow_html=True)
+        st.markdown("### 🛠️ تخصيص الاختبار")
+        total_available = len(SLIDES_DATA)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            num_questions = st.number_input(
+                f"كم شريحة تريد اختبارها؟ (الأقصى {total_available})", 
+                min_value=1, 
+                max_value=total_available, 
+                value=min(10, total_available)
             )
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    if st.button("🚀 ابدأ الاختبار الآن", use_container_width=True):
-        all_slides = list(SLIDES_DATA.keys())
-        st.session_state.selected_slides = random.sample(all_slides, num_questions)
-        st.session_state.quiz_started = True
-        st.session_state.current_q_index = 0
-        st.session_state.show_answer = False
-        st.session_state.stored_user_answer = ""
-        st.session_state.q_start_time = time.time()
-        st.rerun()
+        with col2:
+            st.markdown("<br>", unsafe_allow_html=True) 
+            st.session_state.use_timer = st.toggle("🚀 تفعيل تحدي المؤقت السريع", value=True)
+        
+        if st.session_state.use_timer:
+            st.session_state.timer_duration = st.slider("مدة التفكير لكل شريحة (ثانية)", 10, 60, 30)
+            
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        if st.button("🔥 ابدأ التحدي الآن"):
+            all_slides = list(SLIDES_DATA.keys())
+            st.session_state.selected_slides = random.sample(all_slides, num_questions)
+            st.session_state.quiz_started = True
+            st.session_state.current_q_index = 0
+            st.session_state.show_answer = False
+            st.session_state.stored_user_answer = ""
+            st.session_state.q_start_time = time.time()
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
 # 4. واجهة المراجعة والاختبار
@@ -278,102 +302,97 @@ else:
     
     if current_q >= total_q:
         st.balloons()
-        st.success("🎉 لقد أنهيت جميع الشرائح المحددة، أحسنت يا دكتور! 🥇")
-        if st.button("🔄 بدء اختبار جديد", use_container_width=True):
+        st.markdown("<div style='text-align:center; padding:50px; background:white; border-radius:20px;'>", unsafe_allow_html=True)
+        st.success("🎉 مبروك يا دكتور! لقد أكملت الاختبار بنجاح 🏆")
+        if st.button("🔄 العودة للبداية"):
             st.session_state.quiz_started = False
             st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
             
     else:
-        # شريط التقدم
+        # شريط التقدم الملون
         st.progress(current_q / total_q)
-        st.markdown(f"<div class='progress-info'>📊 الشريحة <b>{current_q + 1}</b> من <b>{total_q}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:right; font-weight:bold; color:#4B0082;'>جاري العمل على الشريحة {current_q + 1} من {total_q}</p>", unsafe_allow_html=True)
         
         current_slide = st.session_state.selected_slides[current_q]
         slide_data = SLIDES_DATA[current_slide]
         question_text = slide_data["q"]
         correct_answer = slide_data["a"]
         
-        # 1. عرض السؤال بالإنجليزي
-        st.markdown(f"<div class='question-box'>❓ <b>Question:</b> {question_text}</div>", unsafe_allow_html=True)
+        # تقسيم الشاشة لجزئين: الصورة والبيانات
+        col_img, col_data = st.columns([1.2, 1])
         
-        # 2. عرض الصورة
-        img_path = os.path.join(FOLDER_NAME, current_slide)
-        try:
-            image = Image.open(img_path)
-            st.image(image, use_container_width=True)
-        except FileNotFoundError:
-            st.error(f"❌ لم يتم العثور على الصورة: {current_slide}.")
+        with col_img:
+            img_path = os.path.join(FOLDER_NAME, current_slide)
+            try:
+                image = Image.open(img_path)
+                st.image(image, use_container_width=True)
+            except FileNotFoundError:
+                st.error(f"❌ مفقود: {current_slide}")
+        
+        with col_data:
+            # السؤال
+            st.markdown(f"""
+                <div class='question-card'>
+                    <div class='question-header'>❓ Question</div>
+                    <div style='font-size: 1.3em; color: #333;'>{question_text}</div>
+                </div>
+            """, unsafe_allow_html=True)
             
-        # 3. منطقة الإجابة والمؤقت
-        if not st.session_state.show_answer:
-            if st.session_state.use_timer:
-                # حساب الوقت المتبقي
+            # المؤقت
+            if not st.session_state.show_answer and st.session_state.use_timer:
                 elapsed = int(time.time() - st.session_state.q_start_time)
                 remaining = max(0, st.session_state.timer_duration - elapsed)
                 
-                # عرض المؤقت التنازلي
-                minutes = remaining // 60
-                seconds = remaining % 60
-                
-                timer_color = "#D97706" if remaining > 10 else "#DC2626"
-                
                 st.markdown(f"""
-                    <div class='timer-box'>
-                        <div id='countdown' class='timer-display' style='color: {timer_color};'>{minutes:02d}:{seconds:02d}</div>
-                        <div class='timer-label'>⏱️ الوقت المتبقي</div>
+                    <div class='timer-container'>
+                        <div class='timer-val'>{remaining}</div>
+                        <div style='font-weight:bold;'>ثواني متبقية! أسرع!</div>
                     </div>
                 """, unsafe_allow_html=True)
                 
-                # إذا انتهى الوقت، اعرض الإجابة تلقائياً
                 if remaining <= 0:
-                    st.warning("⚠️ انتهى الوقت! سيتم عرض الإجابة الصحيحة.")
-                    st.session_state.stored_user_answer = ""
-                    st.session_state.time_taken = st.session_state.timer_duration
+                    st.toast("⚠️ انتهى الوقت!", icon="⏰")
                     st.session_state.show_answer = True
+                    st.session_state.time_taken = st.session_state.timer_duration
+                    time.sleep(1)
                     st.rerun()
                 
-                # حل المؤقت بدون مكتبات خارجية: استخدام empty وتكرار
                 time.sleep(1)
                 st.rerun()
+
+            # منطقة الإجابة
+            if not st.session_state.show_answer:
+                user_input = st.text_area("⌨️ اكتب تشخيصك هنا:", placeholder="Type your answer in English...", height=150)
                 
-            # مربع إدخال النص
-            user_input = st.text_area("✍️ Write your answer here / اكتب إجابتك هنا:", height=100)
-            
-            if st.button("👁️ تأكيد وإظهار الإجابة الصحيحة", use_container_width=True, type="primary"):
-                st.session_state.stored_user_answer = user_input
-                st.session_state.time_taken = time.time() - st.session_state.q_start_time
-                st.session_state.show_answer = True
-                st.rerun()
+                if st.button("✅ تأكيد الإجابة"):
+                    st.session_state.stored_user_answer = user_input
+                    st.session_state.time_taken = time.time() - st.session_state.q_start_time
+                    st.session_state.show_answer = True
+                    st.rerun()
+            else:
+                # عرض النتائج بتنسيق ملون
+                st.markdown("### 📊 التقييم:")
+                st.markdown(f"<div class='user-ans'><b>📝 إجابتك:</b><br>{st.session_state.stored_user_answer or 'لا توجد إجابة'}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='correct-ans'><b>✅ الإجابة النموذجية:</b><br>{correct_answer}</div>", unsafe_allow_html=True)
                 
-        # 4. منطقة عرض النتيجة والتصحيح
-        else:
-            # عرض إجابة الطالب
-            st.markdown("<b>📝 إجابتك (Your Answer):</b>", unsafe_allow_html=True)
-            user_text = st.session_state.stored_user_answer if st.session_state.stored_user_answer.strip() else "لم تكتب شيئاً (No answer provided)"
-            st.markdown(f"<div class='user-answer-card'>{user_text}</div>", unsafe_allow_html=True)
-            
-            # عرض الإجابة النموذجية
-            st.markdown("<b>✅ الإجابة النموذجية (Model Answer):</b>", unsafe_allow_html=True)
-            st.markdown(f"<div class='answer-card'>{correct_answer}</div>", unsafe_allow_html=True)
-            
-            # عرض نتيجة المؤقت إن كان مفعلاً
-            if st.session_state.use_timer:
-                t = int(st.session_state.time_taken)
-                if t <= st.session_state.timer_duration:
-                    st.info(f"⏱️ استغرقت {t} ثانية (ممتاز! ⚡)")
-                else:
-                    st.warning(f"⚠️ استغرقت {t} ثانية (تجاوزت الحد الزمني 😅)")
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            if st.button("➡️ السؤال التالي (Next Slide)", use_container_width=True, type="primary"):
-                st.session_state.current_q_index += 1
-                st.session_state.show_answer = False
-                st.session_state.stored_user_answer = ""
-                st.session_state.q_start_time = time.time()
-                st.rerun()
+                if st.session_state.use_timer:
+                    t = int(st.session_state.time_taken)
+                    if t <= st.session_state.timer_duration:
+                        st.success(f"⚡ رائع! أجبت في {t} ثانية فقط.")
+                    else:
+                        st.warning(f"🐢 استغرقت {t} ثانية، حاول أن تكون أسرع!")
+                
+                st.markdown("<div class='next-btn'>", unsafe_allow_html=True)
+                if st.button("➡️ الشريحة التالية"):
+                    st.session_state.current_q_index += 1
+                    st.session_state.show_answer = False
+                    st.session_state.stored_user_answer = ""
+                    st.session_state.q_start_time = time.time()
+                    st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("---")
-        if st.button("🛑 إنهاء الاختبار والعودة للإعدادات"):
+        if st.button("🏠 العودة للقائمة الرئيسية"):
             st.session_state.quiz_started = False
             st.rerun()
