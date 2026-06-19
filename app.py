@@ -1,5 +1,4 @@
 import html
-import random
 import time
 from pathlib import Path
 
@@ -452,7 +451,7 @@ def reset_quiz() -> None:
 
 def start_quiz(num_questions: int, use_timer: bool) -> None:
     all_slides = list(SLIDES_DATA.keys())
-    st.session_state.selected_slides = random.sample(all_slides, num_questions)
+    st.session_state.selected_slides = all_slides[:num_questions]
     st.session_state.quiz_started = True
     st.session_state.current_q_index = 0
     st.session_state.show_answer = False
